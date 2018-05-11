@@ -21,3 +21,8 @@ This project is aiming to create a new way to make music -- using hand gestures.
 - Demo: Live demo on a real phone + pre-recorded demo video
 - Worst-case: All the functions will work but may not have a very high accuracy or could not respond quickly.
 - Best-case: All the functions work well with accurate gesture recognition, ultra-fast response time. Some other add-ons would also be introduced including practice mode, challenge mode, etc. 
+
+### response from the judges
+
+- If use YOLO, we'd better put computation part to the cloud and make android app a client.
+- mobile openCV library might be different with the pc version. Need more investigation on that.
