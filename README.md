@@ -16,9 +16,13 @@ This project is aiming to create a new way to make music -- using hand gestures.
 - The forth one is a simple media play activity when user choose a specific clip for playing.
 
 ### Method of detecting hand gesture
-
+- We investigate some other examples about hand gesture tracking, and decide to try color based hand gesture tracking. The potential stages consist of presampling for hand color and background color, which is used to compute the threshold for the binary images. Each binary image from different colors will be merged together. After that, using OpenCV functions, we need to find the convex as well as contour points of the hand from the binary image and compute the fingertip locations, and finally results a feature vector.
+- Reference: http://simena86.github.io/blog/2013/08/12/hand-tracking-and-recognition-with-opencv/
 
 ### Plan for next week
+1. Implement the basic UI structure and Activities structrue for our app.
+2. Continue to investigate the hand gesture detection and begin to implement it with OpenCV functions and develop necessary codes.
+3. Test the audio sounds that we would like to add to our app, and try to build the software structure for this part before applying the actual hand gesture detection function.
 
 ## First Presentation on May 10th
 
