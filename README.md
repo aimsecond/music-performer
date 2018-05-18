@@ -3,7 +3,16 @@
 This project is aiming to create a new way to make music -- using hand gestures.
 
 ---
-## First Presentation on May.10
+## Week of May 13th
+
+### UI and structure design
+
+### Method of detect Hand Gesture
+
+
+### Plan for next week
+
+## First Presentation on May 10th
 
 ### objective
 
