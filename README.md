@@ -3,6 +3,15 @@
 This project is aiming to create a new way to make music -- using hand gestures.
 
 ---
+
+## Week of May 20th
+
+### UI and structure design
+- We have built the basic structure and UI for the app. Currently, some concerns still need to be discuss and modify, including the orientation when the user start to create a piece. To optimize hand gesture detection and prevent other elements, such as user's head, which may impact the detection precision, the potrait orientation is better. However, it is difficult to detect/include multiple hands in such orientation.
+- The play list adopt recycler list view to show the videos that were recorded by the user.
+
+### Method of detecting hand gesture
+
 ## Week of May 13th
 
 ### UI and structure design
