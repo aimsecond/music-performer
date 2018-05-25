@@ -10,7 +10,24 @@ This project is aiming to create a new way to make music -- using hand gestures.
 - We have built the basic structure and UI for the app. Currently, some concerns still need to be discuss and modify, including the orientation when the user start to create a piece. To optimize hand gesture detection and prevent other elements, such as user's head, which may impact the detection precision, the potrait orientation is better. However, it is difficult to detect/include multiple hands in such orientation.
 - The play list adopt recycler list view to show the videos that were recorded by the user.
 
-### Method of detecting hand gesture
+### Hand gesture recognition
+##### Method of detecting hand gesture
+- The whole idea of detecting the hand gesture is to separate hands from the environment and convert the video stream information to a structural mathematical model. This could help us get better result in the classifying stage.
+- The basic idea of extract hand gestures from the incoming stream is based on [this post](http://eaglesky.github.io/2015/12/26/HandGestureRecognition/). It uses color-based segmentation to separate hands from the environment. This method requires two-step pre-sampling, once for the environment color and once for the hand color. Then it filters out the area that doesn't familiar with the color of hand, and finally we get a binary image. Future classifiation job are all based on this binary image. We have already tested this idea, and it worked, not very accurate. We are trying to explore if there's any better segmentation methods.
+
+##### Method of classifying hand gesture
+- The post we just metioned uses SVM to do the classification job. It is fast and responsive, and we really appreciated that. However, there are still some flaws:
+  	- The oringinal idea was trying to extract the feature by calculating the number of concave hull points and their corresponding angle; but in our test, it would count knuckles as fingures sometimes. Our solution is to calculate the convex instead.
+- Another great method is using [YOLO](https://docs.google.com/presentation/d/1kAa7NOamBt4calBU9iHgT8a86RRHz9Yz2oh4-GTdX6M/edit#slide=id.g150bad67fe_1_2) at the beginning. We would try our best to include YOLO in our project, if time permits.
+
+### Method of triggering the sound
+- Like many other instrument APPs (for example, [virtual piano](https://android.jlelse.eu/creating-a-virtual-piano-for-android-b6d3ac05d961) and [Soundpool sample project](https://www.faultinmycode.com/2018/05/using-android-soundpool-build-piano-app.html)), the mechanism of producing sound is very straightforward:
+	- create a map of sound(using Android soundpool library or add individual .wav files as soundbank)
+	- bind the trigger event with corresponding  sound (in our case, the result of gesture recognition)
+	- keep looping until exit this activity
+- A sound actually have many parameters to be configured: pitch, velocity, effect, timbre, etc. We only decide to support real-time pitch modification for now. After we done with all the tasks above, we might add real-time velocity changing by using the proximity sensor.
+
+
 
 ## Week of May 13th
 
