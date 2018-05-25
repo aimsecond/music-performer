@@ -17,7 +17,7 @@ This project is aiming to create a new way to make music -- using hand gestures.
 
 ##### Method of classifying hand gesture
 - The post we just metioned uses SVM to do the classification job. It is fast and responsive, and we really appreciated that. However, there are still some flaws:
-  	- The oringinal idea was trying to extract the feature by calculating the number of concave hull points and their corresponding angle; but in our test, it would count knuckles as fingures sometimes. Our solution is to calculate the convex instead.
+	- The oringinal idea was trying to extract the feature by calculating the number of concave hull points and their corresponding angle; but in our test, it would count knuckles as fingures sometimes. Our solution is to calculate the convex instead.
 - Another great method is using [YOLO](https://docs.google.com/presentation/d/1kAa7NOamBt4calBU9iHgT8a86RRHz9Yz2oh4-GTdX6M/edit#slide=id.g150bad67fe_1_2) at the beginning. We would try our best to include YOLO in our project, if time permits.
 
 ### Method of triggering the sound
