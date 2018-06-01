@@ -1,0 +1,1 @@
+https://web.stanford.edu/class/ee368/Android/Tutorial-2.pdf (如何在Andorid上使用opencv)
