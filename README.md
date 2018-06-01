@@ -3,6 +3,8 @@
 This project is aiming to create a new way to make music -- using hand gestures.
 
 ---
+### Plan for next week
+- Next week we will continue to develop the codes for Handgesture detection. We have developed codes for detecting hand and finding the contour of the hand to extract it from the image utilizing OpenCV methods. In addition, based on the  [this post](http://eaglesky.github.io/2015/12/26/HandGestureRecognition/), we have developed codes for identifying and recording key parameter of human hands. The next step for code developing is to develop the computational functions. The computational functions are used to compute and decide the position of the fingertips, which requires larger computational performance. We will develop this part, including svm model for training based on the fingertips location to predict the user's handgestrue with c++.
 
 ## Week of May 20th
 
