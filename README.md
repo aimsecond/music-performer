@@ -3,14 +3,15 @@
 This project is aiming to create a new way to make music -- using hand gestures.
 
 ---
-### Plan for next week
-- Next week we will continue to develop the codes for Handgesture detection. We have developed codes for detecting hand and finding the contour of the hand to extract it from the image utilizing OpenCV methods. In addition, based on the  [this post](http://eaglesky.github.io/2015/12/26/HandGestureRecognition/), we have developed codes for identifying and recording key parameter of human hands. The next step for code developing is to develop the computational functions. The computational functions are used to compute and decide the position of the fingertips, which requires larger computational performance. We will develop this part, including svm model for training based on the fingertips location to predict the user's handgestrue with c++.
+## Week of May 27th
 ### Code structure & UI settled down
 - We have discussed serveral possible ways of implementating the core logic. Including how to utilize the openCV libarary to distinguish the hand from the environment, and how to classify the hand guestures. Here's our plan(Might be changed in the future):
 	- 4 activities total: LoginActivity,performActivity,playActivity,playlistActivity.
 	- 3 helper classes: handDetection, adapter, myCameraView
 	- Use native code, (c++ code) to learn the hand guesture. Use SVM to do the classification.
 	- Basic UI has already been designed and coded.
+### Plan for next week
+- Next week we will continue to develop the codes for Handgesture detection. We have developed codes for detecting hand and finding the contour of the hand to extract it from the image utilizing OpenCV methods. In addition, based on the  [this post](http://eaglesky.github.io/2015/12/26/HandGestureRecognition/), we have developed codes for identifying and recording key parameter of human hands. The next step for code developing is to develop the computational functions. The computational functions are used to compute and decide the position of the fingertips, which requires larger computational performance. We will develop this part, including svm model for training based on the fingertips location to predict the user's handgestrue with c++.
 
 ## Week of May 20th
 
