@@ -3,6 +3,14 @@
 This project is aiming to create a new way to make music -- using hand gestures.
 
 ---
+## Week of June 3rd
+### App 0.1 version finished
+- In our 0.1 version, we added code that allow users to use hand gesture to play different piano sounds. The whole process worked with little lattency, which is pretty good, however it is not super accurate. The problem has two main causes:
+	- Detection Part. Right now we are using the color-based mechanism to filter out the backgroud pixels. However this works not very good in practice: when the contrast between hand colar and environment color has no significant diffence, we will get wrong hand region. I believe we could dig into this method more deeper and get better result filtering result after tweak our filter boundaries. Another possible approch is to use yolo, this will recognize hand position in real-time. This method 
+	- The current method only feed one label per guesture to the SVM model, and that's won't produce very good result if the training data is so limited. We decide to add more sample as training labels and feed the to the SVM, so it could get better results. The drawback is more complex model will definitely cost more computation time. 
+
+## Week of May 20th
+
 ## Week of May 27th
 ### Code structure & UI settled down
 - We have discussed serveral possible ways of implementating the core logic. Including how to utilize the openCV libarary to distinguish the hand from the environment, and how to classify the hand guestures. Here's our plan(Might be changed in the future):
