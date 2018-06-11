@@ -207,7 +207,12 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
     private Button mLeftButton;
     private Button mRightButton;
     private Button mCenterButton;
-
+    private Button mRecordButton;
+//------------------Revised for Button Mode----------------
+    private enum ButtonMode{
+        CALIBRATEBACK_INVISIBLE, CALIBRATEHAND_INVISIBLE, GENERATEBIN_INVISIBLE, PERFORM_ADD_TRAIN, PERFORM_RECORD, ADD_GESTRUE
+}
+    private ButtonMode bm = ButtonMode.CALIBRATEBACK_INVISIBLE;
 
 //------------------Piano Implementation-------------------
     static private int lastPredict = 0;
@@ -316,79 +321,119 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
                     mRightButton = findViewById(R.id.right_button);
                     mRightButton.setVisibility(View.GONE);
                     mLeftButton = findViewById(R.id.left_button);
-                    mLeftButton.setVisibility(View.GONE);
+//                    mLeftButton.setVisibility(View.GONE);
+                    mLeftButton.setText("CALIBRATEBACK");
                     mCenterButton = findViewById(R.id.center_button);
                     mCenterButton.setVisibility(View.GONE);
-
-                    mOpenCvCameraView.setOnTouchListener(new View.OnTouchListener() {
-
-                        //Called when user touch the view screen
-                        //Mode flow: BACKGROUND_MODE --> SAMPLE_MODE --> DETECTION_MODE <--> TRAIN_REC_MODE
-                        public boolean onTouch(View v, MotionEvent event) {
-                            // ... Respond to touch events
-                            int action = MotionEventCompat.getActionMasked(event);
-
-                            switch(action) {
-                                case (MotionEvent.ACTION_DOWN) :
-                                    Log.d(TAG,"Action was DOWN");
-                                    String toastStr = null;
-                                    if (mode == SAMPLE_MODE) {
-                                        mode = DETECTION_MODE;
-                                        toastStr = "Sampling Finished!";
-                                    } else if (mode == DETECTION_MODE) {
-                                        mode = TRAIN_REC_MODE;
-                                        mLeftButton.setVisibility(View.VISIBLE);
-                                        mLeftButton.setText("PERFORM");
-                                        mCenterButton.setVisibility(View.VISIBLE);
-                                        mCenterButton.setText("ADD");
-                                        mRightButton.setVisibility(View.VISIBLE);
-                                        toastStr = "Binary Display Finished!";
-
-                                        preTrain();
-
-                                    } else if (mode == TRAIN_REC_MODE){
-                                        mode = DETECTION_MODE;
-                                        toastStr = "train finished!";
-                                        mLeftButton.setVisibility(View.GONE);
-                                        mCenterButton.setVisibility(View.GONE);
-                                        mRightButton.setVisibility(View.GONE);
-                                    } else if (mode == BACKGROUND_MODE) {
-                                        toastStr = "First background sampled!";
-                                        rgbaMat.copyTo(backMat);
-                                        mode = SAMPLE_MODE;
-                                    }
-
-                                    Toast.makeText(getApplicationContext(), toastStr, Toast.LENGTH_LONG).show();
-                                    return false;
-                                case (MotionEvent.ACTION_MOVE) :
-                                    Log.d(TAG,"Action was MOVE");
-                                    return true;
-                                case (MotionEvent.ACTION_UP) :
-                                    Log.d(TAG,"Action was UP");
-                                    return true;
-                                case (MotionEvent.ACTION_CANCEL) :
-                                    Log.d(TAG,"Action was CANCEL");
-                                    return true;
-                                case (MotionEvent.ACTION_OUTSIDE) :
-                                    Log.d(TAG,"Movement occurred outside bounds " +
-                                            "of current screen element");
-                                    return true;
-                                default :
-                                    return true;
+                    mRecordButton = findViewById(R.id.record_button);
+                    mRecordButton.setVisibility(View.GONE);
+//                    mOpenCvCameraView.setOnTouchListener(new View.OnTouchListener() {
+//
+//                        //Called when user touch the view screen
+//                        //Mode flow: BACKGROUND_MODE --> SAMPLE_MODE --> DETECTION_MODE <--> TRAIN_REC_MODE
+//                        public boolean onTouch(View v, MotionEvent event) {
+//                            // ... Respond to touch events
+//                            int action = MotionEventCompat.getActionMasked(event);
+//
+//                            switch(action) {
+//                                case (MotionEvent.ACTION_DOWN) :
+//                                    Log.d(TAG,"Action was DOWN");
+//                                    String toastStr = null;
+//                                    if (mode == SAMPLE_MODE) {
+//                                        mode = DETECTION_MODE;
+//                                        toastStr = "Sampling Finished!";
+//                                    } else if (mode == DETECTION_MODE) {
+//                                        mode = TRAIN_REC_MODE;
+//                                        mLeftButton.setVisibility(View.VISIBLE);
+//                                        mLeftButton.setText("PERFORM");
+//                                        mCenterButton.setVisibility(View.VISIBLE);
+//                                        mCenterButton.setText("ADD");
+//                                        mRightButton.setVisibility(View.VISIBLE);
+//                                        toastStr = "Binary Display Finished!";
+//
+//                                        preTrain();
+//
+//                                    } else if (mode == TRAIN_REC_MODE){
+//                                        mode = DETECTION_MODE;
+//                                        toastStr = "train finished!";
+//                                        mLeftButton.setVisibility(View.GONE);
+//                                        mCenterButton.setVisibility(View.GONE);
+//                                        mRightButton.setVisibility(View.GONE);
+//                                    } else if (mode == BACKGROUND_MODE) {
+//                                        toastStr = "First background sampled!";
+//                                        rgbaMat.copyTo(backMat);
+//                                        mode = SAMPLE_MODE;
+//                                    }
+//
+//                                    Toast.makeText(getApplicationContext(), toastStr, Toast.LENGTH_LONG).show();
+//                                    return false;
+//                                case (MotionEvent.ACTION_MOVE) :
+//                                    Log.d(TAG,"Action was MOVE");
+//                                    return true;
+//                                case (MotionEvent.ACTION_UP) :
+//                                    Log.d(TAG,"Action was UP");
+//                                    return true;
+//                                case (MotionEvent.ACTION_CANCEL) :
+//                                    Log.d(TAG,"Action was CANCEL");
+//                                    return true;
+//                                case (MotionEvent.ACTION_OUTSIDE) :
+//                                    Log.d(TAG,"Movement occurred outside bounds " +
+//                                            "of current screen element");
+//                                    return true;
+//                                default :
+//                                    return true;
+//                            }
+//
+//
+//                        }
+//                    });
+//
+//                } break;
+//                default: {
+//                    super.onManagerConnected(status);
+//
+//                }break;
+//            }
+//        }
+//    };
+                    mLeftButton.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            if(bm == ButtonMode.CALIBRATEBACK_INVISIBLE){
+                                rgbaMat.copyTo(backMat);
+                                bm = ButtonMode.CALIBRATEHAND_INVISIBLE;
+                                mLeftButton.setText("CALIBRATEHAND");
+                            }else if (bm == ButtonMode.CALIBRATEHAND_INVISIBLE) {
+                                bm = ButtonMode.GENERATEBIN_INVISIBLE;
+                                mLeftButton.setText("FINALSTEP");
+                            }else if (bm == ButtonMode.GENERATEBIN_INVISIBLE){
+                                bm = ButtonMode.PERFORM_ADD_TRAIN;
+                                mLeftButton.setText("PERFORM");
+                                mCenterButton.setVisibility(View.VISIBLE);
+                                mRightButton.setVisibility(View.VISIBLE);
+                                preTrain();
+                            }else if (bm == ButtonMode.PERFORM_ADD_TRAIN){
+                                bm = ButtonMode.PERFORM_RECORD;
+                                mRecordButton.setVisibility(View.VISIBLE);
+                                mCenterButton.setVisibility(View.GONE);
+                                mRightButton.setVisibility(View.GONE);
+                            }else if (bm == ButtonMode.PERFORM_RECORD){
+                                bm = ButtonMode.PERFORM_ADD_TRAIN;
+                                mRecordButton.setVisibility(View.GONE);
+                                mCenterButton.setVisibility(View.VISIBLE);
+                                mRightButton.setVisibility(View.VISIBLE);
                             }
-
-
                         }
                     });
-
                 } break;
-                default: {
-                    super.onManagerConnected(status);
+                    default: {
+                        super.onManagerConnected(status);
 
                 }break;
             }
         }
     };
+//-------------------------------Continue-----------------------
 
     // svm native
     private native int trainClassifierNative(String trainingFile, int kernelType,
@@ -605,14 +650,14 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
     }
 
     //Called when user clicks "Test" button
-    public void perform(View view) {
-
-        if (mode == TRAIN_REC_MODE)
-            mode = TEST_MODE;
-        else if (mode == TEST_MODE) {
-            mode = TRAIN_REC_MODE;
-        }
-    }
+//    public void perform(View view) {
+//
+//        if (mode == TRAIN_REC_MODE)
+//            mode = TEST_MODE;
+//        else if (mode == TEST_MODE) {
+//            mode = TRAIN_REC_MODE;
+//        }
+//    }
 
 
 
@@ -806,11 +851,12 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
 
 
 
-        if (mode == SAMPLE_MODE) { //Second mode which presamples the colors of the hand
-
+//        if (mode == SAMPLE_MODE) { //Second mode which presamples the colors of the hand
+          if (bm == ButtonMode.CALIBRATEHAND_INVISIBLE) {
             preSampleHand(rgbaMat);
 
-        } else if (mode == DETECTION_MODE) { //Third mode which generates the binary image containing the
+//        } else if (mode == DETECTION_MODE) { //Third mode which generates the binary image containing the
+          } else if (bm == ButtonMode.GENERATEBIN_INVISIBLE) {
             //segmented hand represented by white color
             produceBinImg(interMat, binMat);
 
@@ -818,8 +864,10 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
             return binMat;
 
 
-        } else if ((mode == TRAIN_REC_MODE)||(mode == ADD_MODE)
-                || (mode == TEST_MODE) || (mode == APP_TEST_MODE)){
+//        } else if ((mode == TRAIN_REC_MODE)||(mode == ADD_MODE)
+//                || (mode == TEST_MODE) || (mode == APP_TEST_MODE)){
+          } else if ((bm == ButtonMode.PERFORM_ADD_TRAIN)||(bm == ButtonMode.ADD_GESTRUE)
+                  || (bm == ButtonMode.PERFORM_RECORD) ){
 
             produceBinImg(interMat, binMat);
 
@@ -831,7 +879,8 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
 
             //Collecting the frame data of a certain gesture and storing it in the file train_data.txt.
             //This mode stops when the number of frames processed equals GES_FRAME_MAX
-			if (mode == ADD_MODE) {
+//			if (mode == ADD_MODE) {
+              if (bm == ButtonMode.ADD_GESTRUE) {
 				gesFrameCount++;
 				Core.putText(rgbaMat, Integer.toString(gesFrameCount), new Point(10,
 				10), Core.FONT_HERSHEY_SIMPLEX, 0.6, Scalar.all(0));
@@ -872,9 +921,11 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
 
 
 
-					mode = TRAIN_REC_MODE;
+//					mode = TRAIN_REC_MODE;
+                    bm = ButtonMode.PERFORM_ADD_TRAIN;
 				}
-			} else if ((mode == TEST_MODE)) {
+//			} else if ((mode == TEST_MODE)) {
+              } else if ((bm == ButtonMode.PERFORM_RECORD)) {
 //            if(mode == TEST_MODE){
                 Double[] doubleValue = gr.features.toArray(new Double[gr.features.size()]);
                 values[0] = new float[doubleValue.length];
@@ -953,7 +1004,8 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
             }
 
 
-        } else if (mode == BACKGROUND_MODE) { //First mode which presamples background colors
+//        } else if (mode == BACKGROUND_MODE) { //First mode which presamples background colors
+          } else if (bm == ButtonMode.CALIBRATEBACK_INVISIBLE) { //First mode which presamples background colors
             preSampleBack(rgbaMat);
         }
 
@@ -1780,7 +1832,8 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
     //Prepare train_data.txt file and set the mode to be ADD_MODE
  	public void addNewGesture(View view) {
 
- 		if (mode == TRAIN_REC_MODE) {
+// 		if (mode == TRAIN_REC_MODE) {
+        if (bm == ButtonMode.PERFORM_ADD_TRAIN) {
  		if (storeFolder != null) {
  			File myFile = new File(storeFolderName + DATASET_NAME);
 
@@ -1812,7 +1865,8 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
 
 
 				 gesFrameCount = 0;
-				 mode = ADD_MODE;
+//				 mode = ADD_MODE;
+                 bm = ButtonMode.ADD_GESTRUE;
 
 
 		    } catch (FileNotFoundException e) {
@@ -1863,12 +1917,16 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
 
 
 
-		if (((mode == BACKGROUND_MODE) || (mode == SAMPLE_MODE)
-				|| (mode == TRAIN_REC_MODE)) || (mode == ADD_MODE) ||
-				(mode == TEST_MODE)) {
+//		if (((mode == BACKGROUND_MODE) || (mode == SAMPLE_MODE)
+//				|| (mode == TRAIN_REC_MODE)) || (mode == ADD_MODE) ||
+//				(mode == TEST_MODE)) {
+            if (((bm == ButtonMode.CALIBRATEBACK_INVISIBLE) || (bm == ButtonMode.CALIBRATEHAND_INVISIBLE)
+                    || (bm == ButtonMode.PERFORM_ADD_TRAIN)) || (bm == ButtonMode.ADD_GESTRUE) ||
+                    (bm == ButtonMode.PERFORM_RECORD)) {
 			Imgproc.cvtColor(rgbaMat, bgrMat, Imgproc.COLOR_RGBA2BGR, 3);
 			img = bgrMat;
-		} else if (mode == DETECTION_MODE) {
+//		} else if (mode == DETECTION_MODE) {
+            } else if (bm == ButtonMode.GENERATEBIN_INVISIBLE) {
 			img = binMat;
 		} else
 			img = null;
@@ -1881,7 +1939,8 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
 
 			 File path;
 			 String filename;
-			 if (mode != ADD_MODE) {
+//			 if (mode != ADD_MODE) {
+            if (bm != ButtonMode.ADD_GESTRUE) {
 				 path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
 				 filename = "image_" + imgNum + ".jpg";
 			 } else {

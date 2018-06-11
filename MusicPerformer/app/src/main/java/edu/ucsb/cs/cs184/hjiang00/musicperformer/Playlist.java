@@ -6,6 +6,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,7 +22,7 @@ public class Playlist extends AppCompatActivity {
     private RecyclerView mRecyclerView;
     private RecyclerView.Adapter mAdapter;
     private RecyclerView.LayoutManager mLayoutManager;
-    ArrayList<String> myVideo;
+    ArrayList<String> myAudio;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,22 +31,33 @@ public class Playlist extends AppCompatActivity {
             mRecyclerView = (RecyclerView) findViewById(R.id.recyclerView);
             mRecyclerView.setHasFixedSize(true);
 
-            myVideo = new ArrayList<>();
+            myAudio = new ArrayList<>();
+
+
+
+
+
             for (int i = 0; i < 10; i++){
-                myVideo.add(i,"name" + String.valueOf(i));
+                myAudio.add(i,"name" + String.valueOf(i));
             }
 
 
             mLayoutManager = new LinearLayoutManager(this);
             mRecyclerView.setLayoutManager(mLayoutManager);
 
-            mAdapter = new MyAdapter(myVideo);
+            mAdapter = new MyAdapter(myAudio);
             mRecyclerView.setAdapter(mAdapter);
+
+
 
             //mAdapter.notifyDataSetChanged();
 
     }
 
-
+    @Override
+    protected void onDestroy() {
+        Log.d("PlayList", "Saved sharedpreference");
+        super.onDestroy();
+    }
 }
 

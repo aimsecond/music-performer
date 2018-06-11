@@ -1,5 +1,6 @@
 package edu.ucsb.cs.cs184.hjiang00.musicperformer;
 
+import android.content.Intent;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -8,8 +9,13 @@ import android.widget.TextView;
 
 import java.util.ArrayList;
 
-public class MyAdapter extends RecyclerView.Adapter<MyAdapter.ViewHolder>{
+public class MyAdapter extends RecyclerView.Adapter<MyAdapter.ViewHolder> implements View.OnClickListener{
     private ArrayList<String> mDataset;
+
+    @Override
+    public void onClick(View view) {
+
+    }
 
     // Provide a reference to the views for each data item
     // Complex data items may need more than one view per item, and

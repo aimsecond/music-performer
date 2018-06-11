@@ -44,6 +44,14 @@
         android:layout_centerHorizontal="true"
         android:onClick="addNewGesture"/>
 
+    <Button
+        android:id="@+id/record_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/left_button"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentLeft="true"
+        android:text="RECORD" />
 
 
 </RelativeLayout>
