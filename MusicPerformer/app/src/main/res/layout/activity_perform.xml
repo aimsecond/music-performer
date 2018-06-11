@@ -10,8 +10,8 @@
 
     <edu.ucsb.cs.cs184.hjiang00.musicperformer.MyCameraView
         android:id="@+id/myCameraView"
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         android:layout_centerHorizontal="true"
         android:layout_centerVertical="true"
         opencv:camera_id="front" />

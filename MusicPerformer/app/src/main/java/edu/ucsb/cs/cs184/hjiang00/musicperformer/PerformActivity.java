@@ -447,7 +447,8 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
-        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
+//        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(R.layout.activity_perform);
 
 //		try{
@@ -498,7 +499,7 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
 
 
         mOpenCvCameraView = (MyCameraView) findViewById(R.id.myCameraView);
-        mOpenCvCameraView.setMaxFrameSize(320, 240);
+        mOpenCvCameraView.setMaxFrameSize(200, 200);
         mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
         mOpenCvCameraView.setCvCameraViewListener(this);
 
@@ -709,9 +710,10 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
     public void onCameraViewStarted(int width, int height) {
         // TODO Auto-generated method stub
         Log.i(TAG, "On cameraview started!");
-		rgbaMat = new Mat(height, width, CvType.CV_8UC4);
-		mRgbaF = new Mat(height, width, CvType.CV_8UC4);
-		mRgbaT = new Mat(width, width, CvType.CV_8UC4);
+//		rgbaMat = new Mat(height, width, CvType.CV_8UC4);
+//        mRgbaT = new Mat(width, width, CvType.CV_8UC4);
+//		mRgbaF = new Mat(height, width, CvType.CV_8UC4);
+
 
         if (sampleColorMat == null)
             sampleColorMat = new Mat();
@@ -786,11 +788,13 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
     public Mat onCameraFrame(CvCameraViewFrame inputFrame) {
         rgbaMat = inputFrame.rgba();
 
-		Core.transpose(rgbaMat, mRgbaT);
-		Imgproc.resize(mRgbaT, mRgbaF, mRgbaF.size(), 0, 0,0);
-		Core.flip(mRgbaF, rgbaMat, -1);
+//		Core.transpose(rgbaMat, mRgbaT);
+//		Imgproc.resize(mRgbaT, mRgbaF, mRgbaF.size(), 0, 0,0);
+//		Core.flip(mRgbaF, rgbaMat, -1);
 
-//        Core.flip(rgbaMat, rgbaMat, 1);
+
+
+        Core.flip(rgbaMat, rgbaMat, 1);
 
 
         Imgproc.GaussianBlur(rgbaMat, rgbaMat, new Size(5,5), 5, 5);
@@ -977,24 +981,42 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
     {
         int cols = img.cols();
         int rows = img.rows();
+        Log.e(TAG,Integer.toString(cols));
+        Log.e(TAG,Integer.toString(rows));
         squareLen = rows/20;
         Scalar color = mColorsRGB[2];  //Blue Outline
 
+//Still can be modified to improve the result of constructing binary image
+//------------------Sample Points location------
+        samplePoints[0][0].x = cols*3/22;
+        samplePoints[0][0].y = rows/2;
+        samplePoints[1][0].x = cols*6/25;
+        samplePoints[1][0].y = rows*7/20;
+        samplePoints[2][0].x = cols*3/8;
+        samplePoints[2][0].y = rows/3;
+        samplePoints[3][0].x = cols*4/7;
+        samplePoints[3][0].y = rows/3;
+        samplePoints[4][0].x = cols*4/7;
+        samplePoints[4][0].y = rows/2;
+        samplePoints[5][0].x = cols*3/7;
+        samplePoints[5][0].y = rows/2;
+        samplePoints[6][0].x = cols/3;
+        samplePoints[6][0].y = rows*9/16;
 
-        samplePoints[0][0].x = cols/2;
-        samplePoints[0][0].y = rows/4;
-        samplePoints[1][0].x = cols*5/12;
-        samplePoints[1][0].y = rows*5/12;
-        samplePoints[2][0].x = cols*7/12;
-        samplePoints[2][0].y = rows*5/12;
-        samplePoints[3][0].x = cols/2;
-        samplePoints[3][0].y = rows*7/12;
-        samplePoints[4][0].x = cols/1.5;
-        samplePoints[4][0].y = rows*7/12;
-        samplePoints[5][0].x = cols*4/9;
-        samplePoints[5][0].y = rows*3/4;
-        samplePoints[6][0].x = cols*5/9;
-        samplePoints[6][0].y = rows*3/4;
+//        samplePoints[0][0].x = cols/2;
+//        samplePoints[0][0].y = rows/4;
+//        samplePoints[1][0].x = cols*5/12;
+//        samplePoints[1][0].y = rows*5/12;
+//        samplePoints[2][0].x = cols*7/12;
+//        samplePoints[2][0].y = rows*5/12;
+//        samplePoints[3][0].x = cols/2;
+//        samplePoints[3][0].y = rows*7/12;
+//        samplePoints[4][0].x = cols/1.5;
+//        samplePoints[4][0].y = rows*7/12;
+//        samplePoints[5][0].x = cols*4/9;
+//        samplePoints[5][0].y = rows*3/4;
+//        samplePoints[6][0].x = cols*5/9;
+//        samplePoints[6][0].y = rows*3/4;
 
         for (int i = 0; i < SAMPLE_NUM; i++)
         {
@@ -1027,7 +1049,6 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
         int rows = img.rows();
         squareLen = rows/20;
         Scalar color = mColorsRGB[2];  //Blue Outline
-
 
 
         samplePoints[0][0].x = cols/6;
