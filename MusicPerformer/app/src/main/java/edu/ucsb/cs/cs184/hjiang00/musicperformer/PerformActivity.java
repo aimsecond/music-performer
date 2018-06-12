@@ -27,6 +27,7 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.Toast;
 
+import org.json.JSONObject;
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.JavaCameraView;
 import org.opencv.core.CvType;
@@ -59,7 +60,11 @@ import java.io.ObjectInputStream;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+
+import static edu.ucsb.cs.cs184.hjiang00.musicperformer.Playlist.PREFS_NAME;
 
 public class PerformActivity extends AppCompatActivity implements CvCameraViewListener2 {
 
@@ -163,7 +168,7 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
 //------------------Piano Implementation-------------------
     static private int lastPredict = 0;
 
-    private static SoundPool mSoundPool;
+    private SoundPool mSoundPool;
     private int csound;
     private int dsound;
     private int esound;
@@ -192,10 +197,15 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
     private Boolean RECORD_MODE = false;
     private long startTime = 0;
     private ArrayList<String> performData = new ArrayList<>();
-    private ArrayList<Integer> ReadData = new ArrayList<>();
     File root = Environment.getExternalStorageDirectory();
     private File SongStoreDir = null;
     private String lastRecordedFile = null;
+    private Map<String, String> mySongMap = new HashMap<>();
+
+    //--------------------Performance improvement---------
+    private int[] lastReturnedLabel;
+    private int checkStable = 0;
+    private static int currentSound = 0;
 
     private Boolean recordButtonClicked() {
         Toast.makeText(getApplicationContext(), "Recording!",
@@ -233,6 +243,8 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
         lastRecordedFile = filename;
         Toast.makeText(getApplicationContext(), "Recording Stored!"+lastRecordedFile,
                 Toast.LENGTH_LONG).show();
+        mySongMap.put("Song" + lastRecordedFile, lastRecordedFile);
+        saveMap(mySongMap);
     }
     public void Record(String str){
         if(RECORD_MODE) {
@@ -374,6 +386,7 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(R.layout.activity_perform);
 
+        mySongMap = loadMap();
         final Button recordButton = findViewById(R.id.record_stop);
         recordButton.setTag(1);
         recordButton.setOnClickListener(new View.OnClickListener() {
@@ -739,37 +752,38 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
                 Log.i("lastPredict"," "+lastPredict);
 
                 if (r == 0) {
-                    Core.putText(rgbaMat, Integer.toString(returnedLabel[0]), new Point(15,
-                            15), Core.FONT_HERSHEY_SIMPLEX, 0.6, mColorsRGB[0]);
-                    if (returnedLabel[0] != 0 && returnedLabel[0] != lastPredict) {
-                        // Play music here
-                        switch (returnedLabel[0]) {
-                            case 1:
-                                playC();lastPredict = returnedLabel[0];
-                                break;
-                            case 2:
-                                playD();lastPredict = returnedLabel[0];
-                                break;
-                            case 3:
-                                playE();lastPredict = returnedLabel[0];
-                                break;
-                            case 4:
-                                playF();lastPredict = returnedLabel[0];
-                                break;
-                            case 5:
-                                playG();lastPredict = returnedLabel[0];
-                                break;
-                            case 6:
-                                playA();lastPredict = returnedLabel[0];
-                                break;
-                            case 7:
-                                playB();lastPredict = returnedLabel[0];
-                                break;
-                            case 8:
-                                playCC();lastPredict = returnedLabel[0];
-                                break;
-                        }
+                    if (lastPredict == returnedLabel[0]) {
+                        checkStable++;
+                    }else{
+                        checkStable = 0;
                     }
+                    lastPredict = returnedLabel[0];
+                        Core.putText(rgbaMat, Integer.toString(returnedLabel[0]), new Point(15,
+                                15), Core.FONT_HERSHEY_SIMPLEX, 0.6, mColorsRGB[0]);
+                        if (returnedLabel[0] != 0 && checkStable >= 5 && currentSound != lastPredict) {
+                                // Play music here
+                            switch (returnedLabel[0]) {
+                                case 1:
+                                        playC();break;
+                                case 2:
+                                        playD();break;
+                                case 3:
+                                        playE();break;
+                                case 4:
+                                        playF();break;
+                                case 5:
+                                        playG();break;
+                                case 6:
+                                        playA();break;
+                                case 7:
+                                        playB();break;
+                                case 8:
+                                        playCC();break;
+                            }
+                            checkStable = 0;
+                            currentSound = returnedLabel[0];
+                        }
+
                 }
             }
           } else if (bm == ButtonMode.CALIBRATEBACK_INVISIBLE) { //First mode which presamples background colors
@@ -1005,9 +1019,7 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
 
         //Find biggest contour and return the index of the contour, which is gr.cMaxId
         gr.findBiggestContour();
-        Log.e(TAG, "READY TO GO INSIDE IF BRANCH");
         if (gr.cMaxId > -1) {
-            Log.e(TAG, "INSIDE IF BRANCH");
 
             gr.approxContour.fromList(gr.contours.get(gr.cMaxId).toList());
             Imgproc.approxPolyDP(gr.approxContour, gr.approxContour, 2, true);
@@ -1016,7 +1028,6 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
             //gr.contours.get(gr.cMaxId) represents the contour of the hand
             Imgproc.drawContours(rgbaMat, gr.contours, gr.cMaxId, mColorsRGB[0], 1);
 
-            Log.e(TAG, "READY TO CALL NATIVE FINDCIRCLE FUNC");
             //Palm center is stored in gr.inCircle, radius of the inscribed circle is stored in gr.inCircleRadius
             gr.findInscribedCircle(rgbaMat);
             gr.boundingRect = Imgproc.boundingRect(gr.contours.get(gr.cMaxId));
@@ -1305,5 +1316,37 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
 		}
 		return false;
 	}
+
+    //Call when recording a new song
+    private void saveMap(Map<String,String> inputMap){
+        SharedPreferences pSharedPref = getApplicationContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        if (pSharedPref != null){
+            JSONObject jsonObject = new JSONObject(inputMap);
+            String jsonString = jsonObject.toString();
+            SharedPreferences.Editor editor = pSharedPref.edit();
+            editor.remove("My_map").commit();
+            editor.putString("My_map", jsonString);
+            editor.commit();
+        }
+    }
+    private Map<String,String> loadMap(){
+        Map<String,String> outputMap = new HashMap<String,String>();
+        SharedPreferences pSharedPref = getApplicationContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        try{
+            if (pSharedPref != null){
+                String jsonString = pSharedPref.getString("My_map", (new JSONObject()).toString());
+                JSONObject jsonObject = new JSONObject(jsonString);
+                Iterator<String> keysItr = jsonObject.keys();
+                while(keysItr.hasNext()) {
+                    String key = keysItr.next();
+                    String value = (String) jsonObject.get(key);
+                    outputMap.put(key, value);
+                }
+            }
+        }catch(Exception e){
+            e.printStackTrace();
+        }
+        return outputMap;
+    }
 
 }
