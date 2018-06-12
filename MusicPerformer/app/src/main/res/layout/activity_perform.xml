@@ -44,7 +44,7 @@
         android:onClick="addNewGesture"/>
 
     <Button
-        android:id="@+id/record_button"
+        android:id="@+id/record_stop"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_above="@+id/left_button"

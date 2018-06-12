@@ -57,6 +57,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 
@@ -171,12 +172,6 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
     private int asound;
     private int bsound;
     private int ccsound;
-    private int cssound;
-    private int csssound;
-    private int dssound;
-    private int gssound;
-    private int assound;
-    private int fssound;
 
     private float LEFT_VOL = 1.0f;
     private float RIGHT_VOL = 1.0f;
@@ -184,60 +179,71 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
     private int LOOP = 0;
     private float RATE = 1.0f;
 
-    public void playC(){mSoundPool.play(csound,LEFT_VOL,RIGHT_VOL,PRIORITY,LOOP,RATE);}
+    public void playC(){mSoundPool.play(csound,LEFT_VOL,RIGHT_VOL,PRIORITY,LOOP,RATE);Record("1");}
+    public void playD(){mSoundPool.play(dsound,LEFT_VOL,RIGHT_VOL,PRIORITY,LOOP,RATE);Record("2");}
+    public void playE(){mSoundPool.play(esound,LEFT_VOL,RIGHT_VOL,PRIORITY,LOOP,RATE);Record("3");}
+    public void playF(){mSoundPool.play(fsound,LEFT_VOL,RIGHT_VOL,PRIORITY,LOOP,RATE);Record("4");}
+    public void playG(){mSoundPool.play(gsound,LEFT_VOL,RIGHT_VOL,PRIORITY,LOOP,RATE);Record("5");}
+    public void playA(){mSoundPool.play(asound,LEFT_VOL,RIGHT_VOL,PRIORITY,LOOP,RATE);Record("6");}
+    public void playB(){mSoundPool.play(bsound,LEFT_VOL,RIGHT_VOL,PRIORITY,LOOP,RATE);Record("7");}
+    public void playCC(){mSoundPool.play(ccsound,LEFT_VOL,RIGHT_VOL,PRIORITY,LOOP,RATE);Record("8");}
 
-    public void playD(){
-        mSoundPool.play(dsound,LEFT_VOL,RIGHT_VOL,PRIORITY,LOOP,RATE);
-    }
+    //---------------- Recording Utilities ----------
+    private Boolean RECORD_MODE = false;
+    private long startTime = 0;
+    private ArrayList<String> performData = new ArrayList<>();
+    private ArrayList<Integer> ReadData = new ArrayList<>();
+    File root = Environment.getExternalStorageDirectory();
+    private File SongStoreDir = null;
+    private String lastRecordedFile = null;
 
-    public void playE(){
-        mSoundPool.play(esound,LEFT_VOL,RIGHT_VOL,PRIORITY,LOOP,RATE);
-    }
+    private Boolean recordButtonClicked() {
+        Toast.makeText(getApplicationContext(), "Recording!",
+                Toast.LENGTH_LONG).show();
+        if(!isExternalStorageWritable()){
+            Toast.makeText(getApplicationContext(), "External Not Writable!",
+                    Toast.LENGTH_LONG).show();
+            return false;
+        }else if (SongStoreDir == null) {
 
-    public void playF(){
-        mSoundPool.play(fsound,LEFT_VOL,RIGHT_VOL,PRIORITY,LOOP,RATE);
+            SongStoreDir= new File(root.getAbsolutePath() + "/MySongs");
+            if (!SongStoreDir.exists()) {
+                if (!SongStoreDir.mkdir()){
+                    Toast.makeText(getApplicationContext(), "Failed to create directory "+ SongStoreDir, Toast.LENGTH_SHORT).show();
+                    SongStoreDir = null;
+                    return false;
+                }
+            }
+        }
+        startTime = System.currentTimeMillis();
+        return true;
     }
-
-    public void playG(){
-        mSoundPool.play(gsound,LEFT_VOL,RIGHT_VOL,PRIORITY,LOOP,RATE);
+    private void stopButtonClicked() {
+        startTime = 0;
+        String filename = new Date().toString();
+        File file = new File(SongStoreDir,filename);
+        try{
+            FileWriter fw = new FileWriter(file,true);
+            for (int i = 0; i < performData.size(); i++) {
+                fw.write(performData.get(i));
+            }
+            fw.close();
+        }catch(Exception e){Log.e("Error","write error");}
+        performData.clear();
+        lastRecordedFile = filename;
+        Toast.makeText(getApplicationContext(), "Recording Stored!"+lastRecordedFile,
+                Toast.LENGTH_LONG).show();
     }
-
-    public void playA(){
-        mSoundPool.play(asound,LEFT_VOL,RIGHT_VOL,PRIORITY,LOOP,RATE);
+    public void Record(String str){
+        if(RECORD_MODE) {
+            long currentTime = System.currentTimeMillis();
+            long time = currentTime - startTime;
+            startTime = currentTime;
+            String data = Long.toString(time)+","+ str+"\n";
+            performData.add(data);
+        }
     }
-
-    public void playB(){
-        mSoundPool.play(bsound,LEFT_VOL,RIGHT_VOL,PRIORITY,LOOP,RATE);
-    }
-
-    public void playCC(){
-        mSoundPool.play(ccsound,LEFT_VOL,RIGHT_VOL,PRIORITY,LOOP,RATE);
-    }
-
-    public void playCS(){
-        mSoundPool.play(cssound,LEFT_VOL,RIGHT_VOL,PRIORITY,LOOP,RATE);
-    }
-
-    public void playDS(){
-        mSoundPool.play(dssound,LEFT_VOL,RIGHT_VOL,PRIORITY,LOOP,RATE);
-    }
-
-    public void playFS(){
-        mSoundPool.play(fssound,LEFT_VOL,RIGHT_VOL,PRIORITY,LOOP,RATE);
-    }
-
-    public void playGS(){
-        mSoundPool.play(gssound,LEFT_VOL,RIGHT_VOL,PRIORITY,LOOP,RATE);
-    }
-
-    public void playAS(){
-        mSoundPool.play(assound,LEFT_VOL,RIGHT_VOL,PRIORITY,LOOP,RATE);
-    }
-
-    public void playCSS(){
-        mSoundPool.play(csssound,LEFT_VOL,RIGHT_VOL,PRIORITY,LOOP,RATE);
-    }
-    //----------------------------------
+    //-----------------------------------------------
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
@@ -266,10 +272,10 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
                     mRightButton = findViewById(R.id.right_button);
                     mRightButton.setVisibility(View.GONE);
                     mLeftButton = findViewById(R.id.left_button);
-                    mLeftButton.setText("CALIBRATEBACK");
+                    mLeftButton.setText(R.string.CALIBRATEBACK);
                     mCenterButton = findViewById(R.id.center_button);
                     mCenterButton.setVisibility(View.GONE);
-                    mRecordButton = findViewById(R.id.record_button);
+                    mRecordButton = findViewById(R.id.record_stop);
                     mRecordButton.setVisibility(View.GONE);
                     mLeftButton.setOnClickListener(new View.OnClickListener() {
                         @Override
@@ -277,13 +283,13 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
                             if(bm == ButtonMode.CALIBRATEBACK_INVISIBLE){
                                 rgbaMat.copyTo(backMat);
                                 bm = ButtonMode.CALIBRATEHAND_INVISIBLE;
-                                mLeftButton.setText("CALIBRATEHAND");
+                                mLeftButton.setText(R.string.CALIBRATEHAND);
                             }else if (bm == ButtonMode.CALIBRATEHAND_INVISIBLE) {
                                 bm = ButtonMode.GENERATEBIN_INVISIBLE;
-                                mLeftButton.setText("FINALSTEP");
+                                mLeftButton.setText(R.string.FINALSTEP);
                             }else if (bm == ButtonMode.GENERATEBIN_INVISIBLE){
                                 bm = ButtonMode.PERFORM_ADD_TRAIN;
-                                mLeftButton.setText("PERFORM");
+                                mLeftButton.setText(R.string.PERFORM);
                                 mCenterButton.setVisibility(View.VISIBLE);
                                 mRightButton.setVisibility(View.VISIBLE);
                                 preTrain();
@@ -359,7 +365,6 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
 
         curLabel = maxLabel;
         curMaxLabel = curLabel;
-
     }
 
     @Override
@@ -369,7 +374,26 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(R.layout.activity_perform);
 
-//---------------------Piano Initialization--------------------
+        final Button recordButton = findViewById(R.id.record_stop);
+        recordButton.setTag(1);
+        recordButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                final int status =(Integer) v.getTag();
+                if(status == 1) {
+                    if(recordButtonClicked()){
+                        RECORD_MODE = true;
+                        recordButton.setText(R.string.STOP);
+                        v.setTag(0); //stop recording
+                    }
+                } else {
+                    RECORD_MODE = false;
+                    recordButton.setText(R.string.RECORD);
+                    v.setTag(1); //start over
+                    stopButtonClicked();
+                }
+            }
+        });
 
         mSoundPool = new SoundPool(10, AudioManager.STREAM_MUSIC,0);
         csound = mSoundPool.load(getApplicationContext(),R.raw.c,1);
@@ -379,13 +403,7 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
         gsound = mSoundPool.load(getApplicationContext(),R.raw.g,1);
         asound = mSoundPool.load(getApplicationContext(),R.raw.a,1);
         bsound = mSoundPool.load(getApplicationContext(),R.raw.b,1);
-        cssound = mSoundPool.load(getApplicationContext(),R.raw.c_hash,1);
-        csssound = mSoundPool.load(getApplicationContext(),R.raw.c_hash,1);
         ccsound = mSoundPool.load(getApplicationContext(),R.raw.c2,1);
-        assound = mSoundPool.load(getApplicationContext(),R.raw.a_hash,1);
-        fssound = mSoundPool.load(getApplicationContext(),R.raw.f_hash,1);
-        gssound = mSoundPool.load(getApplicationContext(),R.raw.g_hash,1);
-        dssound = mSoundPool.load(getApplicationContext(),R.raw.d_hash,1);
 
         mOpenCvCameraView = (MyCameraView) findViewById(R.id.myCameraView);
         mOpenCvCameraView.setMaxFrameSize(200, 200);
@@ -745,7 +763,10 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
                                 playA();lastPredict = returnedLabel[0];
                                 break;
                             case 7:
-                                lastPredict = returnedLabel[0];
+                                playB();lastPredict = returnedLabel[0];
+                                break;
+                            case 8:
+                                playCC();lastPredict = returnedLabel[0];
                                 break;
                         }
                     }
@@ -1104,8 +1125,6 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
         } else
             return null;
     }
-
-
 
     @Override
     public void onPause(){
