@@ -278,7 +278,7 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
                                 Toast.makeText(getApplicationContext(),"HOLD ON! Please check your hand is clear and continue.", Toast.LENGTH_SHORT).show();
                             }else if (bm == ButtonMode.GENERATEBIN_INVISIBLE){
                                 bm = ButtonMode.PERFORM_ADD_TRAIN;
-                                mLeftButton.setText(R.string.PERFORM);
+                                mLeftButton.setText("PERFORM\n");
                                 mDeleteButton.setVisibility(View.VISIBLE);
                                 mCenterButton.setVisibility(View.VISIBLE);
                                 mRightButton.setVisibility(View.VISIBLE);
@@ -292,7 +292,7 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
                                 mRightButton.setVisibility(View.GONE);
                             }else if (bm == ButtonMode.PERFORM_RECORD){
                                 bm = ButtonMode.PERFORM_ADD_TRAIN;
-                                mLeftButton.setText(R.string.PERFORM);
+                                mLeftButton.setText("PERFORM\n");
                                 mRecordButton.setVisibility(View.GONE);
                                 mCenterButton.setVisibility(View.VISIBLE);
                                 mRightButton.setVisibility(View.VISIBLE);

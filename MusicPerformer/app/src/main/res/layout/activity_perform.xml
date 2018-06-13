@@ -16,64 +16,77 @@
         android:layout_centerVertical="true"
         opencv:camera_id="front" />
 
-    <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:id="@+id/right_button"
-        android:text="TRAIN"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentRight="true"
-        android:layout_alignParentEnd="true"
-        android:onClick="train"
-        android:visibility="gone"/>
-
-    <Button
-        android:id="@+id/left_button"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true"
-        android:background="@android:color/white"
-        android:textColor="@android:color/black"
-        android:text="CALIBRATEBACK" />
-    <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:id="@+id/center_button"
-        android:text="ADD"
-        android:layout_alignParentBottom="true"
-        android:layout_centerHorizontal="true"
-        android:background="@android:color/white"
-        android:textColor="@android:color/black"
-        android:onClick="addGesture"
-        android:visibility="gone"/>
+        android:orientation="horizontal">
 
+        <Button
+            android:id="@+id/left_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true"
+            android:text="@string/CALIBRATEBACK"
+            android:layout_weight="1"
+            android:background="@android:color/white"
+            android:textColor="@android:color/black"/>
 
-    <Button
-        android:id="@+id/delete_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_above="@+id/record_stop"
-        android:layout_alignParentStart="true"
-        android:background="@android:color/white"
-        android:textColor="@android:color/black"
-        android:visibility="gone"
-        android:onClick="deleteDir"
-        android:text="DELETE DATA"/>
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/right_button"
+            android:text="TRAIN&#10;MODEL"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentEnd="true"
+            android:onClick="train"
+            android:visibility="gone"
+            android:layout_weight="1"
+            android:background="@android:color/white"
+            android:textColor="@android:color/black"/>
 
-    <Button
-        android:id="@+id/record_stop"
-        android:text="@string/RECORD"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_above="@+id/left_button"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true"
-        android:background="@android:color/white"
-        android:textColor="@android:color/black"
-        android:clickable="true"
-        android:visibility="gone"/>
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/center_button"
+            android:text="ADD&#10;GESTURE"
+            android:layout_alignParentBottom="true"
+            android:layout_centerHorizontal="true"
+            android:onClick="addGesture"
+            android:visibility="gone"
+            android:layout_weight="1"
+            android:background="@android:color/white"
+            android:textColor="@android:color/black"/>
+        <Button
+            android:id="@+id/delete_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_above="@+id/record_stop"
+            android:layout_alignParentStart="true"
+            android:visibility="gone"
+            android:onClick="deleteDir"
+            android:text="DELETE&#10;DATA"
+            android:layout_weight="1"
+            android:background="@android:color/white"
+            android:textColor="@android:color/black"/>
+
+        <Button
+            android:id="@+id/record_stop"
+            android:text="@string/RECORD"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_above="@+id/left_button"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true"
+            android:clickable="true"
+            android:visibility="gone"
+            android:layout_weight="1"
+            android:background="@android:color/white"
+            android:textColor="@android:color/black"/>
+    </LinearLayout>
 
 
 </RelativeLayout>

@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">Music Performer</string>
-    <string name="CALIBRATEHAND">CALIBRATEHAND</string>
-    <string name="CALIBRATEBACK">CALIBRATEBACK</string>
+    <string name="CALIBRATEHAND">SETHAND</string>
+    <string name="CALIBRATEBACK">SETBKGD</string>
     <string name="FINALSTEP">FINALSTEP</string>
     <string name="PERFORM">PERFORM</string>
     <string name="RECORD">RECORD</string>
