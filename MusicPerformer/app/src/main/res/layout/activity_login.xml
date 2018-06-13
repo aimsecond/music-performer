@@ -26,21 +26,30 @@
             app:srcCompat="@drawable/background" />
     </RelativeLayout>
 
-    <Button
-        android:id="@+id/perform"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_above="@+id/play"
-        android:layout_alignParentEnd="true"
-        android:layout_marginEnd="12dp"
-        android:text="Perform" />
-
-    <Button
-        android:id="@+id/play"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:layout_alignStart="@+id/perform"
-        android:text="Play" />
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/perform"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="@android:color/black"
+            android:text="@string/PERFORM"
+            android:textColor="@android:color/white" />
+
+        <Button
+            android:id="@+id/play"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="@android:color/white"
+            android:textColor="@android:color/black"
+            android:text="@string/PLAYBACK" />
+    </LinearLayout>
+
 
 </RelativeLayout>
