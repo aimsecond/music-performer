@@ -318,7 +318,6 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
 
     //SVM training outputs a model file
     private void train() {
-        // Svm training
         int kernelType = 2;
         int cost = 4;
         int isProb = 0;
@@ -429,8 +428,6 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
         return false;
     }
 
-    //are stored in ExternalStorageDirectory/MyDataSet
-    //If MyDataSet doesn't exist, then it will be created in this function
     public void createDataFolder() {
         if (!isExternalStorageWritable()) {
             Toast.makeText(getApplicationContext(), "External storage is not writable!", Toast.LENGTH_SHORT).show();
@@ -623,7 +620,7 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
                         checkStable = 0;
                     }
                     lastPredict = returnedLabel[0];
-                    Core.putText(Mat_RGBA, Integer.toString(returnedLabel[0]), new Point(15, 15), Core.FONT_HERSHEY_SIMPLEX, 0.6, mColorsRGB[0]);
+                    Core.putText(Mat_RGBA, keyName[returnedLabel[0]], new Point(15, 15), Core.FONT_HERSHEY_SIMPLEX, 0.6, mColorsRGB[1]);
                     if (returnedLabel[0] != 0 && checkStable >= 2 && currentSound != lastPredict) {
                         // Play music here
                         switch (returnedLabel[0]) {
@@ -795,7 +792,7 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
         }
     }
 
-    //Construct Binary Image for hand
+    //Hand segmentation
     void constructHand(Mat imgIn, Mat imgOut)
     {
         for (int i = 0; i < SAMPLE_NUM; i++)
@@ -816,7 +813,7 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
         Imgproc.medianBlur(imgOut, imgOut, 3);
     }
 
-    //Construct Binary Image for Background
+    //Background segmentation
     void constructBackground(Mat imgIn, Mat imgOut)
     {
         for (int i = 0; i < SAMPLE_NUM; i++)
@@ -840,7 +837,7 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
         Imgproc.medianBlur(imgOut, imgOut, 7);
     }
 
-    //Construct binary image containing as a whole
+    //Construct binary image as a whole
     void constructBinImg(Mat imgIn, Mat imgOut)
     {
         int colNum = imgIn.cols();
@@ -878,49 +875,46 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
     void drawContour()
     {
         gr.contours.clear();
-        Imgproc.findContours(Mat_BIN, gr.contours, gr.hie, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_NONE);
+        Imgproc.findContours(Mat_BIN, gr.contours, gr.hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_NONE);
 
-        //Find biggest contour and return the index of the contour, which is gr.cMaxId
         gr.findBiggestContour();
-        if (gr.cMaxId > -1) {
+        if (gr.contourIndex > -1) {
 
-            gr.approxContour.fromList(gr.contours.get(gr.cMaxId).toList());
+            gr.approxContour.fromList(gr.contours.get(gr.contourIndex).toList());
             Imgproc.approxPolyDP(gr.approxContour, gr.approxContour, 2, true);
-            gr.contours.get(gr.cMaxId).fromList(gr.approxContour.toList());
+            gr.contours.get(gr.contourIndex).fromList(gr.approxContour.toList());
 
-            //gr.contours.get(gr.cMaxId) represents the contour of the hand
-            Imgproc.drawContours(Mat_RGBA, gr.contours, gr.cMaxId, mColorsRGB[0], 1);
+            //draw contours
+            Imgproc.drawContours(Mat_RGBA, gr.contours, gr.contourIndex, mColorsRGB[0], 1);
 
-            //Palm center is stored in gr.inCircle, radius of the inscribed circle is stored in gr.inCircleRadius
             gr.findInscribedCircle(Mat_RGBA);
-            gr.boundingRect = Imgproc.boundingRect(gr.contours.get(gr.cMaxId));
-            Imgproc.convexHull(gr.contours.get(gr.cMaxId), gr.hullI, false);
+            gr.boundingRect = Imgproc.boundingRect(gr.contours.get(gr.contourIndex));
+            Imgproc.convexHull(gr.contours.get(gr.contourIndex), gr.hull, false);
             gr.hullP.clear();
             for (int i = 0; i < gr.contours.size(); i++)
                 gr.hullP.add(new MatOfPoint());
 
-            int[] cId = gr.hullI.toArray();
+            int[] cId = gr.hull.toArray();
             List<Point> lp = new ArrayList<Point>();
-            Point[] contourPts = gr.contours.get(gr.cMaxId).toArray();
+            Point[] contourPts = gr.contours.get(gr.contourIndex).toArray();
 
             for (int i = 0; i < cId.length; i++)
             {
                 lp.add(contourPts[cId[i]]);
             }
 
-            //gr.hullP.get(gr.cMaxId) returns the locations of the points in the convex hull of the hand
-            gr.hullP.get(gr.cMaxId).fromList(lp);
+            gr.hullP.get(gr.contourIndex).fromList(lp);
             lp.clear();
-            gr.fingerTips.clear();
+            gr.fingers.clear();
             gr.defectPoints.clear();
             gr.defectPointsOrdered.clear();
-            gr.fingerTipsOrdered.clear();
-            gr.defectIdAfter.clear();
+            gr.fingersOrder.clear();
+            gr.defectIndex.clear();
 
             if ((contourPts.length >= 5)
                     && gr.detectIsHand(Mat_RGBA) && (cId.length >=5)){
-                Imgproc.convexityDefects(gr.contours.get(gr.cMaxId), gr.hullI, gr.defects);
-                List<Integer> dList = gr.defects.toList();
+                Imgproc.convexityDefects(gr.contours.get(gr.contourIndex), gr.hull, gr.defectsMat);
+                List<Integer> dList = gr.defectsMat.toList();
 
                 for (int i = 0; i < dList.size(); i++)
                 {
@@ -940,26 +934,26 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
                         double lenth1 = Math.sqrt(vec1.x*vec1.x + vec1.y*vec1.y);
                         double cosTheta = dot/(lenth0*lenth1);
 
-                        if ((depth > gr.inCircleRadius*0.7)&&(cosTheta>=-0.7)
+                        if ((depth > gr.palmRadius*0.7)&&(cosTheta>=-0.7)
                                 && (!isClosedToBoundary(curPoint0, Mat_RGBA))
                                 &&(!isClosedToBoundary(curPoint1, Mat_RGBA))
                                 ){
 
-                            gr.defectIdAfter.add((i));
-                            Point finVec0 = new Point(curPoint0.x-gr.inCircle.x,
-                                    curPoint0.y-gr.inCircle.y);
+                            gr.defectIndex.add((i));
+                            Point finVec0 = new Point(curPoint0.x-gr.palm.x,
+                                    curPoint0.y-gr.palm.y);
                             double finAngle0 = Math.atan2(finVec0.y, finVec0.x);
-                            Point finVec1 = new Point(curPoint1.x-gr.inCircle.x,
-                                    curPoint1.y - gr.inCircle.y);
+                            Point finVec1 = new Point(curPoint1.x-gr.palm.x,
+                                    curPoint1.y - gr.palm.y);
                             double finAngle1 = Math.atan2(finVec1.y, finVec1.x);
 
-                            if (gr.fingerTipsOrdered.size() == 0) {
-                                gr.fingerTipsOrdered.put(finAngle0, curPoint0);
-                                gr.fingerTipsOrdered.put(finAngle1, curPoint1);
+                            if (gr.fingersOrder.size() == 0) {
+                                gr.fingersOrder.put(finAngle0, curPoint0);
+                                gr.fingersOrder.put(finAngle1, curPoint1);
 
                             } else {
-                                gr.fingerTipsOrdered.put(finAngle0, curPoint0);
-                                gr.fingerTipsOrdered.put(finAngle1, curPoint1);
+                                gr.fingersOrder.put(finAngle0, curPoint0);
+                                gr.fingersOrder.put(finAngle1, curPoint1);
                             }
                         }
                     }
@@ -968,9 +962,8 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
         }
 
         if (gr.detectIsHand(Mat_RGBA)) {
-            //gr.boundingRect represents four coordinates of the bounding box.
             Core.rectangle(Mat_RGBA, gr.boundingRect.tl(), gr.boundingRect.br(), mColorsRGB[1], 2);
-            Imgproc.drawContours(Mat_RGBA, gr.hullP, gr.cMaxId, mColorsRGB[2]);
+            Imgproc.drawContours(Mat_RGBA, gr.hullP, gr.contourIndex, mColorsRGB[2]);
         }
     }
 
@@ -986,11 +979,11 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
     Rect makeBoundingBox(Mat img)
     {
         gr.contours.clear();
-        Imgproc.findContours(img, gr.contours, gr.hie, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_NONE);
+        Imgproc.findContours(img, gr.contours, gr.hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_NONE);
         gr.findBiggestContour();
 
-        if (gr.cMaxId > -1) {
-            gr.boundingRect = Imgproc.boundingRect(gr.contours.get(gr.cMaxId));
+        if (gr.contourIndex > -1) {
+            gr.boundingRect = Imgproc.boundingRect(gr.contours.get(gr.contourIndex));
         }
 
         if (gr.detectIsHand(Mat_RGBA)) {
@@ -1031,12 +1024,9 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
 
 
     	public void showDialogBeforeAdd(String title,String message){
-		Log.i("Show Dialog", "Entered");
         AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(
                   this);
-             // set title
              alertDialogBuilder.setTitle(title);
-             // set dialog message
              alertDialogBuilder
                   .setMessage(message)
                   .setCancelable(false)
@@ -1051,8 +1041,6 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
                    })
                   .setNegativeButton("No",new DialogInterface.OnClickListener() {
                        public void onClick(DialogInterface dialog,int id) {
-                            // if this button is clicked, just close
-                            // the dialog box and do nothing
                     	   synchronized(sync) {
                                sync.notify();
                                }
@@ -1060,9 +1048,7 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
 
                        }
                   });
-                  // create alert dialog
                   AlertDialog alertDialog = alertDialogBuilder.create();
-                  // show it
                   alertDialog.show();
    }
 
@@ -1126,6 +1112,38 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
  			curMaxLabel = curLabel;
  		}
  	}
+    //Call when finish recording a new song
+    private void saveMap(Map<String,String> inputMap){
+        SharedPreferences pSharedPref = getApplicationContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        if (pSharedPref != null){
+            JSONObject jsonObject = new JSONObject(inputMap);
+            String jsonString = jsonObject.toString();
+            SharedPreferences.Editor editor = pSharedPref.edit();
+            editor.remove("My_map").commit();
+            editor.putString("My_map", jsonString);
+            editor.commit();
+        }
+    }
+    //Call when start to record a new song
+    private Map<String,String> loadMap(){
+        Map<String,String> outputMap = new HashMap<String,String>();
+        SharedPreferences pSharedPref = getApplicationContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        try{
+            if (pSharedPref != null){
+                String jsonString = pSharedPref.getString("My_map", (new JSONObject()).toString());
+                JSONObject jsonObject = new JSONObject(jsonString);
+                Iterator<String> keysItr = jsonObject.keys();
+                while(keysItr.hasNext()) {
+                    String key = keysItr.next();
+                    String value = (String) jsonObject.get(key);
+                    outputMap.put(key, value);
+                }
+            }
+        }catch(Exception e){
+            e.printStackTrace();
+        }
+        return outputMap;
+    }
 
  	boolean savePicture()
 	{
@@ -1165,7 +1183,6 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
 			  bool = Highgui.imwrite(filename, img);
 
 			  if (bool == true) {
-				//  Toast.makeText(getApplicationContext(), "Saved as " + filename, Toast.LENGTH_SHORT).show();
 				  Log.d(TAG, "Succeed save image to" + filename);
 			  } else
 			    Log.d(TAG, "Fail to save Image");
@@ -1175,38 +1192,6 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
 		return false;
 	}
 
-    //Call when finish recording a new song
-    private void saveMap(Map<String,String> inputMap){
-        SharedPreferences pSharedPref = getApplicationContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        if (pSharedPref != null){
-            JSONObject jsonObject = new JSONObject(inputMap);
-            String jsonString = jsonObject.toString();
-            SharedPreferences.Editor editor = pSharedPref.edit();
-            editor.remove("My_map").commit();
-            editor.putString("My_map", jsonString);
-            editor.commit();
-        }
-    }
-    //Call when start to record a new song
-    private Map<String,String> loadMap(){
-        Map<String,String> outputMap = new HashMap<String,String>();
-        SharedPreferences pSharedPref = getApplicationContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        try{
-            if (pSharedPref != null){
-                String jsonString = pSharedPref.getString("My_map", (new JSONObject()).toString());
-                JSONObject jsonObject = new JSONObject(jsonString);
-                Iterator<String> keysItr = jsonObject.keys();
-                while(keysItr.hasNext()) {
-                    String key = keysItr.next();
-                    String value = (String) jsonObject.get(key);
-                    outputMap.put(key, value);
-                }
-            }
-        }catch(Exception e){
-            e.printStackTrace();
-        }
-        return outputMap;
-    }
     public void deleteDir(View view) {
         File dir = new File(Environment.getExternalStorageDirectory()+"/MyDataSet");
         if (dir.isDirectory())

@@ -69,15 +69,7 @@ public class Playlist extends AppCompatActivity {
         setContentView(R.layout.activity_playlist);
 
         SongStoreDir = new File(Environment.getExternalStorageDirectory() + "/MySongs");
-
-//        mySongMap.put("song1", "fileName1");
-//        mySongMap.put("song2", "fileName2");
-//        mySongMap.put("song3", "fileName3");
-//
-//        saveMap(mySongMap);
-
-
-        mySongMap = loadMap();
+                mySongMap = loadMap();
         if (mySongMap != null) {
             myAudioNameList = new ArrayList<>(mySongMap.keySet());
         }else {
@@ -93,9 +85,6 @@ public class Playlist extends AppCompatActivity {
                 String songName = (String) listView.getItemAtPosition(i);
                 fileName = mySongMap.get(songName);
                 Log.d("PlayTest", "Play muisc file" + fileName);
-//                Intent intent = new Intent(getApplicationContext(), PlayActivity.class);
-//                intent.putExtra("songFile", fileName);
-//                startActivity(intent);
                 playbackButtonClicked();
             }
         });
@@ -122,9 +111,6 @@ public class Playlist extends AppCompatActivity {
         Log.d("PlayList", "Saved sharedpreference");
         super.onDestroy();
     }
-    //
-
-
 
     //Save Hashmap to sharedpreference file
     private void saveMap(Map<String,String> inputMap){
