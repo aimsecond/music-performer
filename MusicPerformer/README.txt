@@ -1,1 +1,0 @@
-This is revised code with ButtonMode instead of mode. It works successfully.

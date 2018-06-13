@@ -197,6 +197,7 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
     private int curLabel = 0;
     private int selectedLabel = -2;
     private int curMaxLabel = 0;
+    private final int MAX_GESTURES = 8;
 
 
     private ArrayList<String> feaStrs = new ArrayList<String>();
@@ -306,7 +307,7 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
                                 mCenterButton.setVisibility(View.VISIBLE);
                                 mRightButton.setVisibility(View.VISIBLE);
                                 createDataFolder();
-                            }else if (bm == ButtonMode.PERFORM_ADD_TRAIN){
+                            }else if (bm == ButtonMode.PERFORM_ADD_TRAIN && isModelExist()){
                                 bm = ButtonMode.PERFORM_RECORD;
                                 mRecordButton.setVisibility(View.VISIBLE);
                                 mDeleteButton.setVisibility(View.GONE);
@@ -455,7 +456,14 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
         return false;
     }
 
-
+    public boolean isModelExist(){
+        File modelfile = new File(storeFolderName + "/model");
+        if (modelfile.exists()) {
+            return true;
+        }
+        Toast.makeText(getApplicationContext(), "Please add guesture to your model first ", Toast.LENGTH_SHORT).show();
+        return false;
+    }
 
     //All the trained gestures jpg files and SVM training model, train_data.txt
     //are stored in ExternalStorageDirectory/MyDataSet
@@ -700,7 +708,7 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
 
 				feaStrs.add(entry);
 
-				if (gesFrameCount == MAX_FRAME_COLLECT && curLabel <= 8) {
+				if (gesFrameCount == MAX_FRAME_COLLECT ) {
 					 Runnable runnableShowBeforeAdd = new Runnable() {
 				            @Override
 				            public void run() {
@@ -1192,7 +1200,10 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
 
 
  	public void addGesture(View view) {
-
+        if(curLabel >= MAX_GESTURES){
+            Toast.makeText(getApplicationContext(), "You can't add more than 8 gestures!", Toast.LENGTH_SHORT).show();
+            return;
+        }
         if (bm == ButtonMode.PERFORM_ADD_TRAIN) {
             if (storeFolder != null) {
                 File myFile = new File(storeFolderName + DATASET_NAME);
@@ -1338,6 +1349,9 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
                 new File(dir, children[i]).delete();
             }
         }
+        Toast.makeText(getApplicationContext(), "All gestures have been deleted ", Toast.LENGTH_SHORT).show();
+        curLabel = 0;
+        curMaxLabel = 0;
     }
 
 }
