@@ -172,8 +172,6 @@ public class Playlist extends AppCompatActivity {
 
         int keys = 0;
         File file = new File(SongStoreDir,fileName);
-//        Toast.makeText(getApplicationContext(), "playing "+fileName,
-//                Toast.LENGTH_LONG).show();
         try {
             String line;
             FileReader fileReader = new FileReader(file);

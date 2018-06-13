@@ -117,8 +117,8 @@ public class GestureRecognition {
         return ret;
     }
 
-    //Extract hand features from img
-    String featureExtraction(Mat img, int label)
+    //Extract hand from image
+    String handExtraction(Mat img, int label)
     {
         String ret = null;
         if ((detectIsHand(img))) {
@@ -231,12 +231,11 @@ public class GestureRecognition {
                 features.add(f1);
                 features.add(f2);
 
-                //curFinPoint stores the location of the finger tip
-                Core.line(img, inCircle, curFinPoint, new Scalar(24, 77, 9), 2);
-                Core.circle(img, curFinPoint, 2, Scalar.all(0), -5);
-
-                Core.putText(img, Integer.toString(count), new Point(curFinPoint.x - 10,
-                        curFinPoint.y - 10), Core.FONT_HERSHEY_SIMPLEX, 0.5, Scalar.all(0));
+//                Core.line(img, inCircle, curFinPoint, new Scalar(24, 77, 9), 2);
+//                Core.circle(img, curFinPoint, 2, Scalar.all(0), -5);
+//
+//                Core.putText(img, Integer.toString(count), new Point(curFinPoint.x - 10,
+//                        curFinPoint.y - 10), Core.FONT_HERSHEY_SIMPLEX, 0.5, Scalar.all(0));
 
                 count++;
 
@@ -271,8 +270,8 @@ public class GestureRecognition {
         inCircle.x = cirx[0];
         inCircle.y = ciry[0];
 
-        Core.circle(img, inCircle, (int)inCircleRadius, new Scalar(240,240,45,0), 2);
-        Core.circle(img, inCircle, 3, Scalar.all(0), -2);
+//        Core.circle(img, inCircle, (int)inCircleRadius, new Scalar(240,240,45,0), 2);
+//        Core.circle(img, inCircle, 3, Scalar.all(0), -2);
     }
 
 }

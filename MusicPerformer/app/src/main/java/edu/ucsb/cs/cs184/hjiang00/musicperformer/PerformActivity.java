@@ -4,11 +4,13 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.hardware.Camera;
 import android.media.AudioManager;
 import android.media.SoundPool;
 import android.os.Environment;
 import android.os.Handler;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v4.view.MotionEventCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -68,101 +70,18 @@ import static edu.ucsb.cs.cs184.hjiang00.musicperformer.Playlist.PREFS_NAME;
 
 public class PerformActivity extends AppCompatActivity implements CvCameraViewListener2 {
 
-    //Just for debugging
     private static final String TAG = "MusicPerformer";
-
-    //Color Space used for hand segmentation
-    private static final int COLOR_SPACE = Imgproc.COLOR_RGB2Lab;
-
-    //Number of frames collected for each gesture in the training set
-    private static final int GES_FRAME_MAX= 10;
-
-    public final Object sync = new Object();
-
-    //Number of frames used for prediction
-    private static final int FRAME_BUFFER_NUM = 1;
-
-    private boolean isPictureSaved = false;
-
-    private float[][] values = new float[FRAME_BUFFER_NUM][];
-    private int[][] indices = new int[FRAME_BUFFER_NUM][];
-
-    private Handler mHandler = new Handler();
-    private static final String DATASET_NAME = "/train_data.txt";
-
-    private String storeFolderName = null;
-    private File storeFolder = null;
-    private FileWriter fw = null;
-
-
-    private MyCameraView mOpenCvCameraView;
-    private static final int SAMPLE_NUM = 7;
-
-
-    private Point[][] samplePoints = null;
-    private double[][] avgColor = null;
-    private double[][] avgBackColor = null;
-
-    private double[] channelsPixel = new double[4];
-    private ArrayList<ArrayList<Double>> averChans = new ArrayList<ArrayList<Double>>();
-
-    private double[][] cLower = new double[SAMPLE_NUM][3];
-    private double[][] cUpper = new double[SAMPLE_NUM][3];
-    private double[][] cBackLower = new double[SAMPLE_NUM][3];
-    private double[][] cBackUpper = new double[SAMPLE_NUM][3];
-
-    private Scalar lowerBound = new Scalar(0, 0, 0);
-    private Scalar upperBound = new Scalar(0, 0, 0);
-    private int squareLen;
-
-    private Mat sampleColorMat = null;
-    private List<Mat> sampleColorMats = null;
-
-    private Mat[] sampleMats = null ;
-
-    private Mat rgbaMat = null;
-
-    private Mat rgbMat = null;
-    private Mat bgrMat = null;
-
-
-    private Mat interMat = null;
-
-    private Mat binMat = null;
-    private Mat binTmpMat = null;
-    private Mat binTmpMat2 = null;
-    private Mat binTmpMat0 = null;
-    private Mat binTmpMat3 = null;
-
-    private Mat tmpMat = null;
-    private Mat backMat = null;
-    private Mat difMat = null;
-    private Mat binDifMat = null;
-
-    private Scalar mColorsRGB[] = null;
-
-    //Stores all the information about the hand
-    private GestureRecognition gr = null;
-
-    private int imgNum;
-    private int gesFrameCount;
-    private int curLabel = 0;
-    private int selectedLabel = -2;
-    private int curMaxLabel = 0;
-
-    //Stores string representation of features to be written to train_data.txt
-    private ArrayList<String> feaStrs = new ArrayList<String>();
-
-
-
+//--------------------Button----------------
     private Button mLeftButton;
     private Button mRightButton;
     private Button mCenterButton;
     private Button mRecordButton;
-//------------------Revised for Button Mode----------------
+    private Button mDeleteButton;
+
+//------------------Button Mode----------------
     private enum ButtonMode{
         CALIBRATEBACK_INVISIBLE, CALIBRATEHAND_INVISIBLE, GENERATEBIN_INVISIBLE, PERFORM_ADD_TRAIN, PERFORM_RECORD, ADD_GESTRUE
-}
+    }
     private ButtonMode bm = ButtonMode.CALIBRATEBACK_INVISIBLE;
 
 //------------------Piano Implementation-------------------
@@ -193,7 +112,7 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
     public void playB(){mSoundPool.play(bsound,LEFT_VOL,RIGHT_VOL,PRIORITY,LOOP,RATE);Record("7");}
     public void playCC(){mSoundPool.play(ccsound,LEFT_VOL,RIGHT_VOL,PRIORITY,LOOP,RATE);Record("8");}
 
-    //---------------- Recording Utilities ----------
+//---------------- Recording Utilities ----------
     private Boolean RECORD_MODE = false;
     private long startTime = 0;
     private ArrayList<String> performData = new ArrayList<>();
@@ -202,10 +121,88 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
     private String lastRecordedFile = null;
     private Map<String, String> mySongMap = new HashMap<>();
 
-    //--------------------Performance improvement---------
+//--------------------Performance improvement---------
     private int[] lastReturnedLabel;
     private int checkStable = 0;
     private static int currentSound = 0;
+    //Max Number of frames collected
+    private static final int MAX_FRAME_COLLECT= 10;
+
+    //Number of frames used for SVM
+    private static final int FRAME_BUFFER_NUM = 1;
+    private float[][] values = new float[FRAME_BUFFER_NUM][];
+    private int[][] indices = new int[FRAME_BUFFER_NUM][];
+
+    private Handler mHandler = new Handler();
+    private static final String DATASET_NAME = "/data_collect.txt";
+
+
+    private String storeFolderName = null;
+    private File storeFolder = null;
+    private FileWriter fw = null;
+
+
+    private MyCameraView mOpenCvCameraView;
+    private static final int SAMPLE_NUM = 7;
+
+    private ArrayList<ArrayList<Double>> averChans = new ArrayList<ArrayList<Double>>();
+
+//-------------Parameters for binary image construction-------------
+    private Point[][] samplePoints = null;
+    private double[][] colorCorrect = null;
+    private double[][] backgroundCorrect = null;
+    private int collectPointLen;
+    //Boundary correction data
+    private double[][] handLower = new double[SAMPLE_NUM][3];
+    private double[][] handUpper = new double[SAMPLE_NUM][3];
+    private double[][] backgroundLower = new double[SAMPLE_NUM][3];
+    private double[][] backGroundUpper = new double[SAMPLE_NUM][3];
+
+    //Boundary correction
+    private Scalar lowerBound = new Scalar(0, 0, 0);
+    private Scalar upperBound = new Scalar(0, 0, 0);
+
+    //Binary Image matrix
+    private Mat sampleColorMat = null;
+    private List<Mat> sampleColorMats = null;
+
+    private Mat[] sampleMats = null ;
+
+    private Mat rgbaMat = null;
+
+    private Mat rgbMat = null;
+    private Mat bgrMat = null;
+
+
+    private Mat interMat = null;
+
+    private Mat binMat = null;
+    private Mat binTmpMat = null;
+    private Mat binTmpMat2 = null;
+    private Mat binTmpMat0 = null;
+    private Mat binTmpMat3 = null;
+
+    private Mat tmpMat = null;
+    private Mat backMat = null;
+    private Mat difMat = null;
+    private Mat binDifMat = null;
+
+    private Scalar mColorsRGB[] = null;
+
+    //Info of hand
+    private GestureRecognition gr = null;
+
+    private int imgNum;
+    private int gesFrameCount;
+    private int curLabel = 0;
+    private int selectedLabel = -2;
+    private int curMaxLabel = 0;
+
+
+    private ArrayList<String> feaStrs = new ArrayList<String>();
+    private boolean isPictureSaved = false;
+    public final Object sync = new Object();
+
 
     private Boolean recordButtonClicked() {
         Toast.makeText(getApplicationContext(), "Recording!",
@@ -270,25 +267,26 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
                         System.loadLibrary("MusicPerformer");
                         Log.d(TAG, "MusicPerformer loaded successfully");
                     } catch (UnsatisfiedLinkError ule) {
-                        Log.e(TAG, "Hey, could not load native MusicPerformer library");
+                        Log.e(TAG, "Could not load native MusicPerformer library");
                     }
                     try {
                         System.loadLibrary("signal");
                         Log.d(TAG, "signal loaded successfully");
                     } catch (UnsatisfiedLinkError ule) {
-                        Log.e(TAG, "Hey, could not load native signal library");
+                        Log.e(TAG, "Could not load native signal library");
                     }
 
                     mOpenCvCameraView.enableView();
 
                     mRightButton = findViewById(R.id.right_button);
-                    mRightButton.setVisibility(View.GONE);
                     mLeftButton = findViewById(R.id.left_button);
                     mLeftButton.setText(R.string.CALIBRATEBACK);
                     mCenterButton = findViewById(R.id.center_button);
-                    mCenterButton.setVisibility(View.GONE);
                     mRecordButton = findViewById(R.id.record_stop);
-                    mRecordButton.setVisibility(View.GONE);
+                    mDeleteButton = findViewById(R.id.delete_button);
+
+                    Toast.makeText(getApplicationContext(),"Please use square boxes cover a unicolor background and hit calibrate", Toast.LENGTH_SHORT).show();
+
                     mLeftButton.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View view) {
@@ -296,18 +294,22 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
                                 rgbaMat.copyTo(backMat);
                                 bm = ButtonMode.CALIBRATEHAND_INVISIBLE;
                                 mLeftButton.setText(R.string.CALIBRATEHAND);
+                                Toast.makeText(getApplicationContext(),"Please use square boxes cover your hand and hit calibrate", Toast.LENGTH_SHORT).show();
                             }else if (bm == ButtonMode.CALIBRATEHAND_INVISIBLE) {
                                 bm = ButtonMode.GENERATEBIN_INVISIBLE;
                                 mLeftButton.setText(R.string.FINALSTEP);
+                                Toast.makeText(getApplicationContext(),"HOLD ON! Please check your hand is clear and continue.", Toast.LENGTH_SHORT).show();
                             }else if (bm == ButtonMode.GENERATEBIN_INVISIBLE){
                                 bm = ButtonMode.PERFORM_ADD_TRAIN;
                                 mLeftButton.setText(R.string.PERFORM);
+                                mDeleteButton.setVisibility(View.VISIBLE);
                                 mCenterButton.setVisibility(View.VISIBLE);
                                 mRightButton.setVisibility(View.VISIBLE);
-                                preTrain();
+                                createDataFolder();
                             }else if (bm == ButtonMode.PERFORM_ADD_TRAIN){
                                 bm = ButtonMode.PERFORM_RECORD;
                                 mRecordButton.setVisibility(View.VISIBLE);
+                                mDeleteButton.setVisibility(View.GONE);
                                 mCenterButton.setVisibility(View.GONE);
                                 mRightButton.setVisibility(View.GONE);
                             }else if (bm == ButtonMode.PERFORM_RECORD){
@@ -315,6 +317,7 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
                                 mRecordButton.setVisibility(View.GONE);
                                 mCenterButton.setVisibility(View.VISIBLE);
                                 mRightButton.setVisibility(View.VISIBLE);
+                                mDeleteButton.setVisibility(View.VISIBLE);
                             }
                         }
                     });
@@ -334,13 +337,13 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
     private native int doClassificationNative(float values[][], int indices[][],
                                               int isProb, String modelFile, int labels[], double probs[]);
 
-    //SVM training which outputs a file named as "model" in MyDataSet
+    //SVM training outputs a model file
     private void train() {
         // Svm training
-        int kernelType = 2; // Radial basis function
-        int cost = 4; // Cost
+        int kernelType = 2;
+        int cost = 4;
         int isProb = 0;
-        float gamma = 0.001f; // Gamma
+        float gamma = 0.001f;
         String trainingFileLoc = storeFolderName+DATASET_NAME;
         String modelFileLoc = storeFolderName+"/model";
         Log.i("Store Path", modelFileLoc);
@@ -353,31 +356,10 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
         Toast.makeText(this, "Training is done", Toast.LENGTH_SHORT).show();
     }
 
-    public void initLabel() {
-
-        File file[] = storeFolder.listFiles();
-
-        int maxLabel = 0;
-        for (int i=0; i < file.length; i++)
-        {
-
-            String fullName = file[i].getName();
-
-            final int dotId = fullName.lastIndexOf('.');
-            if (dotId > 0) {
-                String name = fullName.substring(0, dotId);
-                String extName = fullName.substring(dotId+1);
-                if (extName.equals("jpg")) {
-                    int curName = Integer.valueOf(name);
-                    if (curName > maxLabel)
-                        maxLabel = curName;
-                }
-            }
-        }
-
-        curLabel = maxLabel;
-        curMaxLabel = curLabel;
+    public void train(View view) {
+        train();
     }
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -396,17 +378,18 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
                 if(status == 1) {
                     if(recordButtonClicked()){
                         RECORD_MODE = true;
-                        recordButton.setText(R.string.STOP);
+                        recordButton.setText("STOP");
                         v.setTag(0); //stop recording
                     }
                 } else {
                     RECORD_MODE = false;
-                    recordButton.setText(R.string.RECORD);
+                    recordButton.setText("RECORD");
                     v.setTag(1); //start over
                     stopButtonClicked();
                 }
             }
         });
+
 
         mSoundPool = new SoundPool(10, AudioManager.STREAM_MUSIC,0);
         csound = mSoundPool.load(getApplicationContext(),R.raw.c,1);
@@ -432,33 +415,32 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
             }
         }
 
-        avgColor = new double[SAMPLE_NUM][3];
-        avgBackColor = new double[SAMPLE_NUM][3];
+        colorCorrect = new double[SAMPLE_NUM][3];
+        backgroundCorrect = new double[SAMPLE_NUM][3];
 
         for (int i = 0; i < 3; i++)
             averChans.add(new ArrayList<Double>());
 
         //HLS
-        //initCLowerUpper(7, 7, 80, 80, 80, 80);
+        //inithandLowerUpper(7, 7, 80, 80, 80, 80);
 
         //RGB
-        //initCLowerUpper(30, 30, 30, 30, 30, 30);
+        //inithandLowerUpper(30, 30, 30, 30, 30, 30);
 
         //HSV
-        //initCLowerUpper(15, 15, 50, 50, 50, 50);
-        //initCBackLowerUpper(5, 5, 80, 80, 100, 100);
+        //inithandLowerUpper(15, 15, 50, 50, 50, 50);
+        //initbackgroundLowerUpper(5, 5, 80, 80, 100, 100);
 
         //Ycrcb
-        //	initCLowerUpper(40, 40, 10, 10, 10, 10);
+        //	inithandLowerUpper(40, 40, 10, 10, 10, 10);
 
         //Lab
-        initCLowerUpper(50, 50, 10, 10, 10, 10);
-        initCBackLowerUpper(50, 50, 3, 3, 3, 3);
+        inithandLowerUpper(50, 50, 10, 10, 10, 10);
+        initbackgroundLowerUpper(50, 50, 3, 3, 3, 3);
 
         SharedPreferences numbers = getSharedPreferences("Numbers", 0);
         imgNum = numbers.getInt("imgNum", 0);
 
-        Log.i(TAG, "Created!");
 
     }
 
@@ -478,7 +460,7 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
     //All the trained gestures jpg files and SVM training model, train_data.txt
     //are stored in ExternalStorageDirectory/MyDataSet
     //If MyDataSet doesn't exist, then it will be created in this function
-    public void preTrain() {
+    public void createDataFolder() {
         if (!isExternalStorageWritable()) {
             Toast.makeText(getApplicationContext(), "External storage is not writable!", Toast.LENGTH_SHORT).show();
         } else if (storeFolder == null) {
@@ -496,48 +478,71 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
         }
 
         if (storeFolder != null) {
-            initLabel();
+            labelInitialize();
         }
 
 
     }
+    public void labelInitialize() {
+        File file[] = storeFolder.listFiles();
 
-    //Called when user clicks "Train" button
-    public void train(View view) {
-        train();
+        int maxLabel = 0;
+        for (int i=0; i < file.length; i++)
+        {
+
+            String fullName = file[i].getName();
+            final int dotId = fullName.lastIndexOf('.');
+            if (dotId > 0) {
+                String name = fullName.substring(0, dotId);
+                String extName = fullName.substring(dotId+1);
+                if (extName.equals("jpg")) {
+                    int curName = Integer.valueOf(name);
+                    if (curName > maxLabel)
+                        maxLabel = curName;
+                }
+            }
+        }
+
+        curLabel = maxLabel;
+        curMaxLabel = curLabel;
     }
 
-    //Just initialize boundaries of the first sample
-    void initCLowerUpper(double cl1, double cu1, double cl2, double cu2, double cl3,
+    //Initialize lower and upper bound for hand and background
+    void inithandLowerUpper(double cl1, double cu1, double cl2, double cu2, double cl3,
                          double cu3)
     {
-        cLower[0][0] = cl1;
-        cUpper[0][0] = cu1;
-        cLower[0][1] = cl2;
-        cUpper[0][1] = cu2;
-        cLower[0][2] = cl3;
-        cUpper[0][2] = cu3;
+        handLower[0][0] = cl1;
+        handUpper[0][0] = cu1;
+        handLower[0][1] = cl2;
+        handUpper[0][1] = cu2;
+        handLower[0][2] = cl3;
+        handUpper[0][2] = cu3;
     }
 
-    void initCBackLowerUpper(double cl1, double cu1, double cl2, double cu2, double cl3,
+    void initbackgroundLowerUpper(double cl1, double cu1, double cl2, double cu2, double cl3,
                              double cu3)
     {
-        cBackLower[0][0] = cl1;
-        cBackUpper[0][0] = cu1;
-        cBackLower[0][1] = cl2;
-        cBackUpper[0][1] = cu2;
-        cBackLower[0][2] = cl3;
-        cBackUpper[0][2] = cu3;
+        backgroundLower[0][0] = cl1;
+        backGroundUpper[0][0] = cu1;
+        backgroundLower[0][1] = cl2;
+        backGroundUpper[0][1] = cu2;
+        backgroundLower[0][2] = cl3;
+        backGroundUpper[0][2] = cu3;
     }
 
-    public void releaseCVMats() {
-        releaseCVMat(sampleColorMat);
+    public void releaseCV(Mat img) {
+        if (img != null)
+            img.release();
+    }
+
+    public void releaseOpenCV() {
+        releaseCV(sampleColorMat);
         sampleColorMat = null;
 
         if (sampleColorMats!=null) {
             for (int i = 0; i < sampleColorMats.size(); i++)
             {
-                releaseCVMat(sampleColorMats.get(i));
+                releaseCV(sampleColorMats.get(i));
             }
         }
         sampleColorMats = null;
@@ -545,50 +550,46 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
         if (sampleMats != null) {
             for (int i = 0; i < sampleMats.length; i++)
             {
-                releaseCVMat(sampleMats[i]);
+                releaseCV(sampleMats[i]);
             }
         }
         sampleMats = null;
 
-        releaseCVMat(rgbMat);
+        releaseCV(rgbMat);
         rgbMat = null;
 
-        releaseCVMat(bgrMat);
+        releaseCV(bgrMat);
         bgrMat = null;
 
-        releaseCVMat(interMat);
+        releaseCV(interMat);
         interMat = null;
 
-        releaseCVMat(binMat);
+        releaseCV(binMat);
         binMat = null;
 
-        releaseCVMat(binTmpMat0);
+        releaseCV(binTmpMat0);
         binTmpMat0 = null;
 
-        releaseCVMat(binTmpMat3);
+        releaseCV(binTmpMat3);
         binTmpMat3 = null;
 
-        releaseCVMat(binTmpMat2);
+        releaseCV(binTmpMat2);
         binTmpMat2 = null;
 
-        releaseCVMat(tmpMat);
+        releaseCV(tmpMat);
         tmpMat = null;
 
-        releaseCVMat(backMat);
+        releaseCV(backMat);
         backMat = null;
 
-        releaseCVMat(difMat);
+        releaseCV(difMat);
         difMat = null;
 
-        releaseCVMat(binDifMat);
+        releaseCV(binDifMat);
         binDifMat = null;
 
     }
 
-    public void releaseCVMat(Mat img) {
-        if (img != null)
-            img.release();
-    }
 
 
     @Override
@@ -657,17 +658,14 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
     public void onCameraViewStopped() {
         // TODO Auto-generated method stub
         Log.i(TAG, "On cameraview stopped!");
-        //	releaseCVMats();
     }
 
 
-    //Called when each frame data gets received
-    //inputFrame contains the data for each frame
-    //Mode flow: BACKGROUND_MODE --> SAMPLE_MODE --> DETECTION_MODE <--> TRAIN_REC_MODE
     @Override
     public Mat onCameraFrame(CvCameraViewFrame inputFrame) {
         rgbaMat = inputFrame.rgba();
 
+        //flip input frame matrix
         Core.flip(rgbaMat, rgbaMat, 1);
 
 
@@ -675,45 +673,39 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
 
         Imgproc.cvtColor(rgbaMat, rgbMat, Imgproc.COLOR_RGBA2RGB);
 
-        //Convert original RGB colorspace to the colorspace indicated by COLR_SPACE
-        Imgproc.cvtColor(rgbaMat, interMat, COLOR_SPACE);
+        //Convert original RGB colorspace
+        Imgproc.cvtColor(rgbaMat, interMat, Imgproc.COLOR_RGB2Lab);
 
 
           if (bm == ButtonMode.CALIBRATEHAND_INVISIBLE) {
-            preSampleHand(rgbaMat);
+            sampleHand(rgbaMat);
 
           } else if (bm == ButtonMode.GENERATEBIN_INVISIBLE) {
-            //segmented hand represented by white color
-            produceBinImg(interMat, binMat);
+            constructBinImg(interMat, binMat);
 
             return binMat;
 
           } else if ((bm == ButtonMode.PERFORM_ADD_TRAIN)||(bm == ButtonMode.ADD_GESTRUE)
                   || (bm == ButtonMode.PERFORM_RECORD) ){
 
-            produceBinImg(interMat, binMat);
-            makeContours();
+            constructBinImg(interMat, binMat);
+            drawContour();
 
+			String entry = gr.handExtraction(rgbaMat, curLabel);
 
-			String entry = gr.featureExtraction(rgbaMat, curLabel);
-
-            //Collecting the frame data of a certain gesture and storing it in the file train_data.txt.
-            //This mode stops when the number of frames processed equals GES_FRAME_MAX
               if (bm == ButtonMode.ADD_GESTRUE) {
 				gesFrameCount++;
 				Core.putText(rgbaMat, Integer.toString(gesFrameCount), new Point(10,
 				10), Core.FONT_HERSHEY_SIMPLEX, 0.6, Scalar.all(0));
 
-
-
 				feaStrs.add(entry);
 
-				if (gesFrameCount == GES_FRAME_MAX) {
+				if (gesFrameCount == MAX_FRAME_COLLECT && curLabel <= 8) {
 					 Runnable runnableShowBeforeAdd = new Runnable() {
 				            @Override
 				            public void run() {
 				                {
-				                	showDialogBeforeAdd("Add or not", "Add this new gesture labeled as "
+				                	showDialogBeforeAdd("Add?", "Add this new gesture labeled as "
 											+ curLabel + "?");
 				                }
 				            }
@@ -745,6 +737,8 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
                 int[] returnedLabel = {0};
                 double[] returnedProb = {0.0};
 
+//                boolean isHand = gr.detectIsHand(rgbaMat);
+
                 //Predicted labels are stored in returnedLabel
                 //Since currently prediction is made for each frame, only returnedLabel[0] is useful.
                 int r = doClassificationNative(values, indices, isProb, modelFile, returnedLabel, returnedProb);
@@ -760,7 +754,7 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
                     lastPredict = returnedLabel[0];
                         Core.putText(rgbaMat, Integer.toString(returnedLabel[0]), new Point(15,
                                 15), Core.FONT_HERSHEY_SIMPLEX, 0.6, mColorsRGB[0]);
-                        if (returnedLabel[0] != 0 && checkStable >= 5 && currentSound != lastPredict) {
+                        if (returnedLabel[0] != 0 && checkStable >= 2 && currentSound != lastPredict) {
                                 // Play music here
                             switch (returnedLabel[0]) {
                                 case 1:
@@ -778,7 +772,7 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
                                 case 7:
                                         playB();break;
                                 case 8:
-                                        playCC();break;
+                                        break;
                             }
                             checkStable = 0;
                             currentSound = returnedLabel[0];
@@ -787,7 +781,7 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
                 }
             }
           } else if (bm == ButtonMode.CALIBRATEBACK_INVISIBLE) { //First mode which presamples background colors
-            preSampleBack(rgbaMat);
+            sampleBackground(rgbaMat);
         }
 
 		if (isPictureSaved) {
@@ -797,16 +791,15 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
         return rgbaMat;
     }
 
-    //Presampling hand colors.
-    //Output is avgColor, which is essentially a 7 by 3 matrix storing the colors sampled by seven squares
-    void preSampleHand(Mat img)
+    //Collect hand sample data
+    void sampleHand(Mat img)
     {
         int cols = img.cols();
         int rows = img.rows();
         Log.e(TAG,Integer.toString(cols));
         Log.e(TAG,Integer.toString(rows));
-        squareLen = rows/20;
-        Scalar color = mColorsRGB[2];  //Blue Outline
+        collectPointLen = rows/20;
+        Scalar color = mColorsRGB[2];
 
 //Still can be modified to improve the result of constructing binary image
 //------------------Sample Points location------
@@ -827,8 +820,8 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
 
         for (int i = 0; i < SAMPLE_NUM; i++)
         {
-            samplePoints[i][1].x = samplePoints[i][0].x+squareLen;
-            samplePoints[i][1].y = samplePoints[i][0].y+squareLen;
+            samplePoints[i][1].x = samplePoints[i][0].x+collectPointLen;
+            samplePoints[i][1].y = samplePoints[i][0].y+collectPointLen;
         }
 
         for (int i = 0; i < SAMPLE_NUM; i++)
@@ -840,21 +833,22 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
         {
             for (int j = 0; j < 3; j++)
             {
-                avgColor[i][j] = (interMat.get((int)(samplePoints[i][0].y+squareLen/2), (int)(samplePoints[i][0].x+squareLen/2)))[j];
+                colorCorrect[i][j] = (interMat.get((int)(samplePoints[i][0].y+collectPointLen/2), (int)(samplePoints[i][0].x+collectPointLen/2)))[j];
             }
         }
 
     }
 
-    //Presampling background colors.
-    //Output is avgBackColor, which is essentially a 7 by 3 matrix storing the colors sampled by seven squares
-    void preSampleBack(Mat img)
+    //Collect Background data
+    void sampleBackground(Mat img)
     {
         int cols = img.cols();
         int rows = img.rows();
-        squareLen = rows/20;
-        Scalar color = mColorsRGB[2];  //Blue Outline
+        collectPointLen = rows/20;
+        Scalar color = mColorsRGB[2];
 
+//Still can be modified to improve the result of constructing binary image
+//------------------Sample Points location------
         samplePoints[0][0].x = cols/6;
         samplePoints[0][0].y = rows/3;
         samplePoints[1][0].x = cols/6;
@@ -872,8 +866,8 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
 
         for (int i = 0; i < SAMPLE_NUM; i++)
         {
-            samplePoints[i][1].x = samplePoints[i][0].x+squareLen;
-            samplePoints[i][1].y = samplePoints[i][0].y+squareLen;
+            samplePoints[i][1].x = samplePoints[i][0].x+collectPointLen;
+            samplePoints[i][1].y = samplePoints[i][0].y+collectPointLen;
         }
 
         for (int i = 0; i < SAMPLE_NUM; i++)
@@ -885,23 +879,23 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
         {
             for (int j = 0; j < 3; j++)
             {
-                avgBackColor[i][j] = (interMat.get((int)(samplePoints[i][0].y+squareLen/2), (int)(samplePoints[i][0].x+squareLen/2)))[j];
+                backgroundCorrect[i][j] = (interMat.get((int)(samplePoints[i][0].y+collectPointLen/2), (int)(samplePoints[i][0].x+collectPointLen/2)))[j];
             }
         }
 
     }
 
-    void boundariesCorrection()
+    void boundaryCorrect()
     {
         for (int i = 1; i < SAMPLE_NUM; i++)
         {
             for (int j = 0; j < 3; j++)
             {
-                cLower[i][j] = cLower[0][j];
-                cUpper[i][j] = cUpper[0][j];
+                handLower[i][j] = handLower[0][j];
+                handUpper[i][j] = handUpper[0][j];
 
-                cBackLower[i][j] = cBackLower[0][j];
-                cBackUpper[i][j] = cBackUpper[0][j];
+                backgroundLower[i][j] = backgroundLower[0][j];
+                backGroundUpper[i][j] = backGroundUpper[0][j];
             }
         }
 
@@ -909,43 +903,82 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
         {
             for (int j = 0; j < 3; j++)
             {
-                if (avgColor[i][j] - cLower[i][j] < 0)
-                    cLower[i][j] = avgColor[i][j];
+                if (colorCorrect[i][j] - handLower[i][j] < 0)
+                    handLower[i][j] = colorCorrect[i][j];
 
-                if (avgColor[i][j] + cUpper[i][j] > 255)
-                    cUpper[i][j] = 255 - avgColor[i][j];
+                if (colorCorrect[i][j] + handUpper[i][j] > 255)
+                    handUpper[i][j] = 255 - colorCorrect[i][j];
 
-                if (avgBackColor[i][j] - cBackLower[i][j] < 0)
-                    cBackLower[i][j] = avgBackColor[i][j];
+                if (backgroundCorrect[i][j] - backgroundLower[i][j] < 0)
+                    backgroundLower[i][j] = backgroundCorrect[i][j];
 
-                if (avgBackColor[i][j] + cBackUpper[i][j] > 255)
-                    cBackUpper[i][j] = 255 - avgBackColor[i][j];
+                if (backgroundCorrect[i][j] + backGroundUpper[i][j] > 255)
+                    backGroundUpper[i][j] = 255 - backgroundCorrect[i][j];
             }
         }
     }
 
-    void adjustBoundingBox(Rect initRect, Mat img)
+    //Construct Binary Image for hand
+    void constructHand(Mat imgIn, Mat imgOut)
     {
+        for (int i = 0; i < SAMPLE_NUM; i++)
+        {
+            lowerBound.set(new double[]{colorCorrect[i][0]-handLower[i][0], colorCorrect[i][1]-handLower[i][1],
+                    colorCorrect[i][2]-handLower[i][2]});
+            upperBound.set(new double[]{colorCorrect[i][0]+handUpper[i][0], colorCorrect[i][1]+handUpper[i][1],
+                    colorCorrect[i][2]+handUpper[i][2]});
+            Core.inRange(imgIn, lowerBound, upperBound, sampleMats[i]);
+        }
 
+        imgOut.release();
+        sampleMats[0].copyTo(imgOut);
+        for (int i = 1; i < SAMPLE_NUM; i++)
+        {
+            Core.add(imgOut, sampleMats[i], imgOut);
+        }
+        Imgproc.medianBlur(imgOut, imgOut, 3);
     }
 
-    //Generates binary image containing user's hand
-    void produceBinImg(Mat imgIn, Mat imgOut)
+    //Construct Binary Image for Background
+    void constructBackground(Mat imgIn, Mat imgOut)
+    {
+        for (int i = 0; i < SAMPLE_NUM; i++)
+        {
+            lowerBound.set(new double[]{backgroundCorrect[i][0]-backgroundLower[i][0], backgroundCorrect[i][1]-backgroundLower[i][1],
+                    backgroundCorrect[i][2]-backgroundLower[i][2]});
+            upperBound.set(new double[]{backgroundCorrect[i][0]+backGroundUpper[i][0], backgroundCorrect[i][1]+backGroundUpper[i][1],
+                    backgroundCorrect[i][2]+backGroundUpper[i][2]});
+            Core.inRange(imgIn, lowerBound, upperBound, sampleMats[i]);
+        }
+
+        imgOut.release();
+        sampleMats[0].copyTo(imgOut);
+
+        for (int i = 1; i < SAMPLE_NUM; i++)
+        {
+            Core.add(imgOut, sampleMats[i], imgOut);
+        }
+
+        Core.bitwise_not(imgOut, imgOut);
+        Imgproc.medianBlur(imgOut, imgOut, 7);
+    }
+
+    //Construct binary image containing as a whole
+    void constructBinImg(Mat imgIn, Mat imgOut)
     {
         int colNum = imgIn.cols();
         int rowNum = imgIn.rows();
         int boxExtension = 0;
 
-        boundariesCorrection();
-        produceBinHandImg(imgIn, binTmpMat);
-        produceBinBackImg(imgIn, binTmpMat2);
+        boundaryCorrect();
+        constructHand(imgIn, binTmpMat);
+        constructBackground(imgIn, binTmpMat2);
 
         Core.bitwise_and(binTmpMat, binTmpMat2, binTmpMat);
         binTmpMat.copyTo(tmpMat);
         binTmpMat.copyTo(imgOut);
 
         Rect roiRect = makeBoundingBox(tmpMat);
-        adjustBoundingBox(roiRect, binTmpMat);
 
         if (roiRect!=null) {
             roiRect.x = Math.max(0, roiRect.x - boxExtension);
@@ -965,54 +998,7 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
         }
     }
 
-    //Generates binary image thresholded only by sampled hand colors
-    void produceBinHandImg(Mat imgIn, Mat imgOut)
-    {
-        for (int i = 0; i < SAMPLE_NUM; i++)
-        {
-            lowerBound.set(new double[]{avgColor[i][0]-cLower[i][0], avgColor[i][1]-cLower[i][1],
-                    avgColor[i][2]-cLower[i][2]});
-            upperBound.set(new double[]{avgColor[i][0]+cUpper[i][0], avgColor[i][1]+cUpper[i][1],
-                    avgColor[i][2]+cUpper[i][2]});
-            Core.inRange(imgIn, lowerBound, upperBound, sampleMats[i]);
-        }
-
-        imgOut.release();
-        sampleMats[0].copyTo(imgOut);
-        for (int i = 1; i < SAMPLE_NUM; i++)
-        {
-            Core.add(imgOut, sampleMats[i], imgOut);
-        }
-        Imgproc.medianBlur(imgOut, imgOut, 3);
-    }
-
-    //Generates binary image thresholded only by sampled background colors
-    void produceBinBackImg(Mat imgIn, Mat imgOut)
-    {
-        for (int i = 0; i < SAMPLE_NUM; i++)
-        {
-            lowerBound.set(new double[]{avgBackColor[i][0]-cBackLower[i][0], avgBackColor[i][1]-cBackLower[i][1],
-                    avgBackColor[i][2]-cBackLower[i][2]});
-            upperBound.set(new double[]{avgBackColor[i][0]+cBackUpper[i][0], avgBackColor[i][1]+cBackUpper[i][1],
-                    avgBackColor[i][2]+cBackUpper[i][2]});
-            Core.inRange(imgIn, lowerBound, upperBound, sampleMats[i]);
-        }
-
-        imgOut.release();
-        sampleMats[0].copyTo(imgOut);
-
-        for (int i = 1; i < SAMPLE_NUM; i++)
-        {
-            Core.add(imgOut, sampleMats[i], imgOut);
-        }
-
-        Core.bitwise_not(imgOut, imgOut);
-        Imgproc.medianBlur(imgOut, imgOut, 7);
-    }
-
-
-
-    void makeContours()
+    void drawContour()
     {
         gr.contours.clear();
         Imgproc.findContours(binMat, gr.contours, gr.hie, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_NONE);
@@ -1043,8 +1029,8 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
             for (int i = 0; i < cId.length; i++)
             {
                 lp.add(contourPts[cId[i]]);
-                //Core.circle(rgbaMat, contourPts[cId[i]], 2, new Scalar(241, 247, 45), -3);
             }
+
             //gr.hullP.get(gr.cMaxId) returns the locations of the points in the convex hull of the hand
             gr.hullP.get(gr.cMaxId).fromList(lp);
             lp.clear();
@@ -1156,7 +1142,7 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
     @Override
     public void onDestroy(){
         Log.i(TAG, "Destroyed!");
-        releaseCVMats();
+        releaseOpenCV();
         super.onDestroy();
         if (mOpenCvCameraView != null) {
             mOpenCvCameraView.disableView();
@@ -1167,7 +1153,7 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
         editor.commit();
     }
 
-/*Non-Used code*/
+
     	public void showDialogBeforeAdd(String title,String message){
 		Log.i("Show Dialog", "Entered");
         AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(
@@ -1204,9 +1190,8 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
                   alertDialog.show();
    }
 
-    //Called when user clicks "Add Gesture" button
-    //Prepare train_data.txt file and set the mode to be ADD_MODE
- 	public void addNewGesture(View view) {
+
+ 	public void addGesture(View view) {
 
         if (bm == ButtonMode.PERFORM_ADD_TRAIN) {
             if (storeFolder != null) {
@@ -1234,25 +1219,19 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
                          selectedLabel = -2;
                      }
                      gesFrameCount = 0;
-    //				 mode = ADD_MODE;
                      bm = ButtonMode.ADD_GESTRUE;
 
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();
-                    Log.i(TAG, "******* File not found. Did you" +
-                            " add a WRITE_EXTERNAL_STORAGE permission to the   manifest?");
+                    Log.i(TAG, "File not found.");
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
  		} else {
- 			Toast.makeText(getApplicationContext(), "Please do it in TRAIN_REC mode"
-					, Toast.LENGTH_SHORT).show();
  		}
  	}
 
-    //Write the strings of features to the file train_data.txt
-    //Save the screenshot of the gesture
  	public void doAddNewGesture() {
  		try {
             for (int i = 0; i < feaStrs.size(); i++) {
@@ -1308,16 +1287,16 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
 
 			  if (bool == true) {
 				//  Toast.makeText(getApplicationContext(), "Saved as " + filename, Toast.LENGTH_SHORT).show();
-				  Log.d(TAG, "Succeed writing image to" + filename);
+				  Log.d(TAG, "Succeed save image to" + filename);
 			  } else
-			    Log.d(TAG, "Fail writing image to external storage");
+			    Log.d(TAG, "Fail to save Image");
 
 			  return bool;
 		}
 		return false;
 	}
 
-    //Call when recording a new song
+    //Call when finish recording a new song
     private void saveMap(Map<String,String> inputMap){
         SharedPreferences pSharedPref = getApplicationContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         if (pSharedPref != null){
@@ -1329,6 +1308,7 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
             editor.commit();
         }
     }
+    //Call when start to record a new song
     private Map<String,String> loadMap(){
         Map<String,String> outputMap = new HashMap<String,String>();
         SharedPreferences pSharedPref = getApplicationContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
@@ -1347,6 +1327,17 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
             e.printStackTrace();
         }
         return outputMap;
+    }
+    public void deleteDir(View view) {
+        File dir = new File(Environment.getExternalStorageDirectory()+"/MyDataSet");
+        if (dir.isDirectory())
+        {
+            String[] children = dir.list();
+            for (int i = 0; i < children.length; i++)
+            {
+                new File(dir, children[i]).delete();
+            }
+        }
     }
 
 }

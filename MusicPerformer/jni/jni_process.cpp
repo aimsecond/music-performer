@@ -21,7 +21,6 @@ JNIEXPORT jdouble JNICALL Java_edu_ucsb_cs_cs184_hjiang00_musicperformer_Gesture
 {
     Mat& img_cpp  = *(Mat*)imgAddr;
 
-    //vector<Point2f>& contour = *(vector<Point2f> *)contourAddr;
     Mat& contourMat = *(Mat*)contourAddr;
     vector<Point2f> contourVec;
 
@@ -53,7 +52,6 @@ JNIEXPORT jdouble JNICALL Java_edu_ucsb_cs_cs184_hjiang00_musicperformer_Gesture
 
     env->SetDoubleArrayRegion(incircleX, 0 , 1, (const jdouble*)outArrayX);
     env->SetDoubleArrayRegion(incircleY, 0 , 1, (const jdouble*)outArrayY);
-    //Core.circle(img, inCircle, (int)inCircleRadius, new Scalar(240,240,45,0), 2);
 
 
     return r;
