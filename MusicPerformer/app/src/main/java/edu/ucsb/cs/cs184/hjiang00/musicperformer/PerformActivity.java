@@ -78,7 +78,6 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
     private Button mRecordButton;
     private Button mDeleteButton;
 
-//------------------Button Mode----------------
     private enum ButtonMode{
         CALIBRATEBACK_INVISIBLE, CALIBRATEHAND_INVISIBLE, GENERATEBIN_INVISIBLE, PERFORM_ADD_TRAIN, PERFORM_RECORD, ADD_GESTRUE
     }
@@ -118,11 +117,9 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
     private ArrayList<String> performData = new ArrayList<>();
     File root = Environment.getExternalStorageDirectory();
     private File SongStoreDir = null;
-    private String lastRecordedFile = null;
     private Map<String, String> mySongMap = new HashMap<>();
 
 //--------------------Performance improvement---------
-    private int[] lastReturnedLabel;
     private int checkStable = 0;
     private static int currentSound = 0;
     //Max Number of frames collected
@@ -152,6 +149,7 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
     private double[][] colorCorrect = null;
     private double[][] backgroundCorrect = null;
     private int collectPointLen;
+
     //Boundary correction data
     private double[][] handLower = new double[SAMPLE_NUM][3];
     private double[][] handUpper = new double[SAMPLE_NUM][3];
@@ -163,42 +161,27 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
     private Scalar upperBound = new Scalar(0, 0, 0);
 
     //Binary Image matrix
-    private Mat sampleColorMat = null;
-    private List<Mat> sampleColorMats = null;
-
     private Mat[] sampleMats = null ;
-
-    private Mat rgbaMat = null;
-
-    private Mat rgbMat = null;
-    private Mat bgrMat = null;
-
-
-    private Mat interMat = null;
-
-    private Mat binMat = null;
-    private Mat binTmpMat = null;
-    private Mat binTmpMat2 = null;
-    private Mat binTmpMat0 = null;
-    private Mat binTmpMat3 = null;
-
-    private Mat tmpMat = null;
-    private Mat backMat = null;
-    private Mat difMat = null;
-    private Mat binDifMat = null;
-
     private Scalar mColorsRGB[] = null;
+    private Mat Mat_RGBA = null;
+    private Mat Mat_RGB = null;
+    private Mat Mat_BGR = null;
+    private Mat Mat_Inter = null;
+    private Mat Mat_tmp = null;
+    private Mat Mat_BIN = null;
+    private Mat Mat_TEMPBIN = null;
+    private Mat Mat_TEMPBIN1 = null;
+    private Mat Mat_TEMPBIN2 = null;
 
-    //Info of hand
+    //Gesture recognition related
     private GestureRecognition gr = null;
-
     private int imgNum;
     private int gesFrameCount;
     private int curLabel = 0;
     private int selectedLabel = -2;
     private int curMaxLabel = 0;
-    private final int MAX_GESTURES = 8;
-
+    private final int MAX_GESTURES = 8; // Right now we only support 8 sounds
+    private static final String[] keyName = {" ","C","D","E","F","G","A","B","Rest"};
 
     private ArrayList<String> feaStrs = new ArrayList<String>();
     private boolean isPictureSaved = false;
@@ -238,10 +221,9 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
             fw.close();
         }catch(Exception e){Log.e("Error","write error");}
         performData.clear();
-        lastRecordedFile = filename;
-        Toast.makeText(getApplicationContext(), "Recording Stored!"+lastRecordedFile,
+        Toast.makeText(getApplicationContext(), "Recording Stored!"+filename,
                 Toast.LENGTH_LONG).show();
-        mySongMap.put("Song" + lastRecordedFile, lastRecordedFile);
+        mySongMap.put("Song - " + filename, filename);
         saveMap(mySongMap);
     }
     public void Record(String str){
@@ -261,9 +243,6 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
             switch(status) {
                 case LoaderCallbackInterface.SUCCESS: {
                     Log.i("Android Tutorial", "OpenCV loaded successfully");
-
-
-
                     try {
                         System.loadLibrary("MusicPerformer");
                         Log.d(TAG, "MusicPerformer loaded successfully");
@@ -281,18 +260,15 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
 
                     mRightButton = findViewById(R.id.right_button);
                     mLeftButton = findViewById(R.id.left_button);
-                    mLeftButton.setText(R.string.CALIBRATEBACK);
                     mCenterButton = findViewById(R.id.center_button);
                     mRecordButton = findViewById(R.id.record_stop);
                     mDeleteButton = findViewById(R.id.delete_button);
 
-                    Toast.makeText(getApplicationContext(),"Please use square boxes cover a unicolor background and hit calibrate", Toast.LENGTH_SHORT).show();
 
                     mLeftButton.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View view) {
                             if(bm == ButtonMode.CALIBRATEBACK_INVISIBLE){
-                                rgbaMat.copyTo(backMat);
                                 bm = ButtonMode.CALIBRATEHAND_INVISIBLE;
                                 mLeftButton.setText(R.string.CALIBRATEHAND);
                                 Toast.makeText(getApplicationContext(),"Please use square boxes cover your hand and hit calibrate", Toast.LENGTH_SHORT).show();
@@ -309,12 +285,14 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
                                 createDataFolder();
                             }else if (bm == ButtonMode.PERFORM_ADD_TRAIN && isModelExist()){
                                 bm = ButtonMode.PERFORM_RECORD;
+                                mLeftButton.setText("GO BACK");
                                 mRecordButton.setVisibility(View.VISIBLE);
                                 mDeleteButton.setVisibility(View.GONE);
                                 mCenterButton.setVisibility(View.GONE);
                                 mRightButton.setVisibility(View.GONE);
                             }else if (bm == ButtonMode.PERFORM_RECORD){
                                 bm = ButtonMode.PERFORM_ADD_TRAIN;
+                                mLeftButton.setText(R.string.PERFORM);
                                 mRecordButton.setVisibility(View.GONE);
                                 mCenterButton.setVisibility(View.VISIBLE);
                                 mRightButton.setVisibility(View.VISIBLE);
@@ -370,6 +348,7 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
         setContentView(R.layout.activity_perform);
 
         mySongMap = loadMap();
+        Toast.makeText(getApplicationContext(),"Please use square boxes cover a unicolor background and hit calibrate", Toast.LENGTH_SHORT).show();
         final Button recordButton = findViewById(R.id.record_stop);
         recordButton.setTag(1);
         recordButton.setOnClickListener(new View.OnClickListener() {
@@ -422,27 +401,12 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
         for (int i = 0; i < 3; i++)
             averChans.add(new ArrayList<Double>());
 
-        //HLS
-        //inithandLowerUpper(7, 7, 80, 80, 80, 80);
-
-        //RGB
-        //inithandLowerUpper(30, 30, 30, 30, 30, 30);
-
-        //HSV
-        //inithandLowerUpper(15, 15, 50, 50, 50, 50);
-        //initbackgroundLowerUpper(5, 5, 80, 80, 100, 100);
-
-        //Ycrcb
-        //	inithandLowerUpper(40, 40, 10, 10, 10, 10);
-
         //Lab
         inithandLowerUpper(50, 50, 10, 10, 10, 10);
         initbackgroundLowerUpper(50, 50, 3, 3, 3, 3);
 
         SharedPreferences numbers = getSharedPreferences("Numbers", 0);
         imgNum = numbers.getInt("imgNum", 0);
-
-
     }
 
 
@@ -465,7 +429,6 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
         return false;
     }
 
-    //All the trained gestures jpg files and SVM training model, train_data.txt
     //are stored in ExternalStorageDirectory/MyDataSet
     //If MyDataSet doesn't exist, then it will be created in this function
     public void createDataFolder() {
@@ -484,20 +447,17 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
                 }
             }
         }
-
         if (storeFolder != null) {
             labelInitialize();
         }
-
-
     }
+
     public void labelInitialize() {
         File file[] = storeFolder.listFiles();
 
         int maxLabel = 0;
         for (int i=0; i < file.length; i++)
         {
-
             String fullName = file[i].getName();
             final int dotId = fullName.lastIndexOf('.');
             if (dotId > 0) {
@@ -510,7 +470,6 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
                 }
             }
         }
-
         curLabel = maxLabel;
         curMaxLabel = curLabel;
     }
@@ -538,122 +497,38 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
         backGroundUpper[0][2] = cu3;
     }
 
-    public void releaseCV(Mat img) {
-        if (img != null)
-            img.release();
-    }
-
-    public void releaseOpenCV() {
-        releaseCV(sampleColorMat);
-        sampleColorMat = null;
-
-        if (sampleColorMats!=null) {
-            for (int i = 0; i < sampleColorMats.size(); i++)
-            {
-                releaseCV(sampleColorMats.get(i));
-            }
-        }
-        sampleColorMats = null;
-
-        if (sampleMats != null) {
-            for (int i = 0; i < sampleMats.length; i++)
-            {
-                releaseCV(sampleMats[i]);
-            }
-        }
-        sampleMats = null;
-
-        releaseCV(rgbMat);
-        rgbMat = null;
-
-        releaseCV(bgrMat);
-        bgrMat = null;
-
-        releaseCV(interMat);
-        interMat = null;
-
-        releaseCV(binMat);
-        binMat = null;
-
-        releaseCV(binTmpMat0);
-        binTmpMat0 = null;
-
-        releaseCV(binTmpMat3);
-        binTmpMat3 = null;
-
-        releaseCV(binTmpMat2);
-        binTmpMat2 = null;
-
-        releaseCV(tmpMat);
-        tmpMat = null;
-
-        releaseCV(backMat);
-        backMat = null;
-
-        releaseCV(difMat);
-        difMat = null;
-
-        releaseCV(binDifMat);
-        binDifMat = null;
-
-    }
-
-
-
     @Override
     public void onCameraViewStarted(int width, int height) {
-        // TODO Auto-generated method stub
         Log.i(TAG, "On cameraview started!");
-
-        if (sampleColorMat == null)
-            sampleColorMat = new Mat();
-
-
-        if (sampleColorMats == null)
-            sampleColorMats = new ArrayList<Mat>();
-
         if (sampleMats == null) {
             sampleMats = new Mat[SAMPLE_NUM];
             for (int i = 0; i < SAMPLE_NUM; i++)
                 sampleMats[i] = new Mat();
         }
 
-        if (rgbMat == null)
-            rgbMat = new Mat();
+        if (Mat_RGB == null)
+            Mat_RGB = new Mat();
 
-        if (bgrMat == null)
-            bgrMat = new Mat();
+        if (Mat_BGR == null)
+            Mat_BGR = new Mat();
 
-        if (interMat == null)
-            interMat = new Mat();
+        if (Mat_Inter == null)
+            Mat_Inter = new Mat();
 
-        if (binMat == null)
-            binMat = new Mat();
+        if (Mat_BIN == null)
+            Mat_BIN = new Mat();
 
-        if (binTmpMat == null)
-            binTmpMat = new Mat();
+        if (Mat_TEMPBIN == null)
+            Mat_TEMPBIN = new Mat();
 
-        if (binTmpMat2 == null)
-            binTmpMat2 = new Mat();
+        if (Mat_TEMPBIN2 == null)
+            Mat_TEMPBIN2 = new Mat();
 
-        if (binTmpMat0 == null)
-            binTmpMat0 = new Mat();
+        if (Mat_TEMPBIN1 == null)
+            Mat_TEMPBIN1 = new Mat();
 
-        if (binTmpMat3 == null)
-            binTmpMat3 = new Mat();
-
-        if (tmpMat == null)
-            tmpMat = new Mat();
-
-        if (backMat==null)
-            backMat = new Mat();
-
-        if (difMat == null)
-            difMat = new Mat();
-
-        if (binDifMat == null)
-            binDifMat = new Mat();
-
+        if (Mat_tmp == null)
+            Mat_tmp = new Mat();
 
         if (gr == null)
             gr = new GestureRecognition();
@@ -664,139 +539,133 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
 
     @Override
     public void onCameraViewStopped() {
-        // TODO Auto-generated method stub
         Log.i(TAG, "On cameraview stopped!");
     }
 
-
     @Override
     public Mat onCameraFrame(CvCameraViewFrame inputFrame) {
-        rgbaMat = inputFrame.rgba();
+        Mat_RGBA = inputFrame.rgba();
 
         //flip input frame matrix
-        Core.flip(rgbaMat, rgbaMat, 1);
+        Core.flip(Mat_RGBA, Mat_RGBA, 1);
+        Imgproc.GaussianBlur(Mat_RGBA, Mat_RGBA, new Size(5, 5), 5, 5);
+        //Convert RGBA -> RGB color space
+        Imgproc.cvtColor(Mat_RGBA, Mat_RGB, Imgproc.COLOR_RGBA2RGB);
+        //Convert RGBA -> CleLAB color space
+        Imgproc.cvtColor(Mat_RGBA, Mat_Inter, Imgproc.COLOR_RGB2Lab);
 
+        if (bm == ButtonMode.CALIBRATEHAND_INVISIBLE) {
+            sampleHand(Mat_RGBA);
 
-        Imgproc.GaussianBlur(rgbaMat, rgbaMat, new Size(5,5), 5, 5);
+        } else if (bm == ButtonMode.GENERATEBIN_INVISIBLE) {
+            constructBinImg(Mat_Inter, Mat_BIN);
 
-        Imgproc.cvtColor(rgbaMat, rgbMat, Imgproc.COLOR_RGBA2RGB);
+            return Mat_BIN;
 
-        //Convert original RGB colorspace
-        Imgproc.cvtColor(rgbaMat, interMat, Imgproc.COLOR_RGB2Lab);
+        } else if ((bm == ButtonMode.PERFORM_ADD_TRAIN) || (bm == ButtonMode.ADD_GESTRUE) || (bm == ButtonMode.PERFORM_RECORD)) {
 
-
-          if (bm == ButtonMode.CALIBRATEHAND_INVISIBLE) {
-            sampleHand(rgbaMat);
-
-          } else if (bm == ButtonMode.GENERATEBIN_INVISIBLE) {
-            constructBinImg(interMat, binMat);
-
-            return binMat;
-
-          } else if ((bm == ButtonMode.PERFORM_ADD_TRAIN)||(bm == ButtonMode.ADD_GESTRUE)
-                  || (bm == ButtonMode.PERFORM_RECORD) ){
-
-            constructBinImg(interMat, binMat);
+            constructBinImg(Mat_Inter, Mat_BIN);
             drawContour();
 
-			String entry = gr.handExtraction(rgbaMat, curLabel);
+            String entry = gr.handExtraction(Mat_RGBA, curLabel);
 
-              if (bm == ButtonMode.ADD_GESTRUE) {
-				gesFrameCount++;
-				Core.putText(rgbaMat, Integer.toString(gesFrameCount), new Point(10,
-				10), Core.FONT_HERSHEY_SIMPLEX, 0.6, Scalar.all(0));
+            if (bm == ButtonMode.ADD_GESTRUE) {
+                gesFrameCount++;
+                Core.putText(Mat_RGBA, Integer.toString(gesFrameCount), new Point(10, 10), Core.FONT_HERSHEY_SIMPLEX, 0.6, Scalar.all(0));
 
-				feaStrs.add(entry);
+                feaStrs.add(entry);
 
-				if (gesFrameCount == MAX_FRAME_COLLECT ) {
-					 Runnable runnableShowBeforeAdd = new Runnable() {
-				            @Override
-				            public void run() {
-				                {
-				                	showDialogBeforeAdd("Add?", "Add this new gesture labeled as "
-											+ curLabel + "?");
-				                }
-				            }
-				        };
+                if (gesFrameCount == MAX_FRAME_COLLECT) {
+                    Runnable runnableShowBeforeAdd = new Runnable() {@Override
+                    public void run() {
+                        {
+                            showDialogBeforeAdd("Add?", "Add this new gesture as note " + keyName[curLabel] + " ?");
+                        }
+                    }
+                    };
 
-					mHandler.post(runnableShowBeforeAdd);
+                    mHandler.post(runnableShowBeforeAdd);
 
-					try {
-						synchronized(sync) {
-							sync.wait();
-						}
-					} catch (Exception e) {}
+                    try {
+                        synchronized(sync) {
+                            sync.wait();
+                        }
+                    } catch(Exception e) {}
                     bm = ButtonMode.PERFORM_ADD_TRAIN;
-				}
-              } else if ((bm == ButtonMode.PERFORM_RECORD)) {
+                }
+            } else if ((bm == ButtonMode.PERFORM_RECORD)) {
                 Double[] doubleValue = gr.features.toArray(new Double[gr.features.size()]);
                 values[0] = new float[doubleValue.length];
                 indices[0] = new int[doubleValue.length];
 
-                for (int i = 0; i < doubleValue.length; i++)
-                {
-                    values[0][i] = (float)(doubleValue[i]*1.0f);
-                    indices[0][i] = i+1;
+                for (int i = 0; i < doubleValue.length; i++) {
+                    values[0][i] = (float)(doubleValue[i] * 1.0f);
+                    indices[0][i] = i + 1;
                 }
 
                 int isProb = 0;
 
                 String modelFile = storeFolderName + "/model";
-                int[] returnedLabel = {0};
-                double[] returnedProb = {0.0};
-
-//                boolean isHand = gr.detectIsHand(rgbaMat);
-
-                //Predicted labels are stored in returnedLabel
-                //Since currently prediction is made for each frame, only returnedLabel[0] is useful.
+                int[] returnedLabel = {
+                        0
+                };
+                double[] returnedProb = {
+                        0.0
+                };
                 int r = doClassificationNative(values, indices, isProb, modelFile, returnedLabel, returnedProb);
-                Log.i("returnedLabel"," "+returnedLabel[0]);
-                Log.i("lastPredict"," "+lastPredict);
+                Log.i("returnedLabel", " " + returnedLabel[0]);
+                Log.i("lastPredict", " " + lastPredict);
 
                 if (r == 0) {
                     if (lastPredict == returnedLabel[0]) {
                         checkStable++;
-                    }else{
+                    } else {
                         checkStable = 0;
                     }
                     lastPredict = returnedLabel[0];
-                        Core.putText(rgbaMat, Integer.toString(returnedLabel[0]), new Point(15,
-                                15), Core.FONT_HERSHEY_SIMPLEX, 0.6, mColorsRGB[0]);
-                        if (returnedLabel[0] != 0 && checkStable >= 2 && currentSound != lastPredict) {
-                                // Play music here
-                            switch (returnedLabel[0]) {
-                                case 1:
-                                        playC();break;
-                                case 2:
-                                        playD();break;
-                                case 3:
-                                        playE();break;
-                                case 4:
-                                        playF();break;
-                                case 5:
-                                        playG();break;
-                                case 6:
-                                        playA();break;
-                                case 7:
-                                        playB();break;
-                                case 8:
-                                        break;
-                            }
-                            checkStable = 0;
-                            currentSound = returnedLabel[0];
+                    Core.putText(Mat_RGBA, Integer.toString(returnedLabel[0]), new Point(15, 15), Core.FONT_HERSHEY_SIMPLEX, 0.6, mColorsRGB[0]);
+                    if (returnedLabel[0] != 0 && checkStable >= 2 && currentSound != lastPredict) {
+                        // Play music here
+                        switch (returnedLabel[0]) {
+                            case 1:
+                                playC();
+                                break;
+                            case 2:
+                                playD();
+                                break;
+                            case 3:
+                                playE();
+                                break;
+                            case 4:
+                                playF();
+                                break;
+                            case 5:
+                                playG();
+                                break;
+                            case 6:
+                                playA();
+                                break;
+                            case 7:
+                                playB();
+                                break;
+                            case 8:
+                                break;
                         }
+                        checkStable = 0;
+                        currentSound = returnedLabel[0];
+                    }
 
                 }
             }
-          } else if (bm == ButtonMode.CALIBRATEBACK_INVISIBLE) { //First mode which presamples background colors
-            sampleBackground(rgbaMat);
+        } else if (bm == ButtonMode.CALIBRATEBACK_INVISIBLE) { //First mode which presamples background colors
+            sampleBackground(Mat_RGBA);
         }
 
-		if (isPictureSaved) {
-			savePicture();
-			isPictureSaved = false;
-		}
-        return rgbaMat;
+        if (isPictureSaved) {
+            savePicture();
+            isPictureSaved = false;
+        }
+        return Mat_RGBA;
     }
 
     //Collect hand sample data
@@ -841,7 +710,7 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
         {
             for (int j = 0; j < 3; j++)
             {
-                colorCorrect[i][j] = (interMat.get((int)(samplePoints[i][0].y+collectPointLen/2), (int)(samplePoints[i][0].x+collectPointLen/2)))[j];
+                colorCorrect[i][j] = (Mat_Inter.get((int)(samplePoints[i][0].y+collectPointLen/2), (int)(samplePoints[i][0].x+collectPointLen/2)))[j];
             }
         }
 
@@ -887,7 +756,7 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
         {
             for (int j = 0; j < 3; j++)
             {
-                backgroundCorrect[i][j] = (interMat.get((int)(samplePoints[i][0].y+collectPointLen/2), (int)(samplePoints[i][0].x+collectPointLen/2)))[j];
+                backgroundCorrect[i][j] = (Mat_Inter.get((int)(samplePoints[i][0].y+collectPointLen/2), (int)(samplePoints[i][0].x+collectPointLen/2)))[j];
             }
         }
 
@@ -979,14 +848,14 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
         int boxExtension = 0;
 
         boundaryCorrect();
-        constructHand(imgIn, binTmpMat);
-        constructBackground(imgIn, binTmpMat2);
+        constructHand(imgIn, Mat_TEMPBIN);
+        constructBackground(imgIn, Mat_TEMPBIN2);
 
-        Core.bitwise_and(binTmpMat, binTmpMat2, binTmpMat);
-        binTmpMat.copyTo(tmpMat);
-        binTmpMat.copyTo(imgOut);
+        Core.bitwise_and(Mat_TEMPBIN, Mat_TEMPBIN2, Mat_TEMPBIN);
+        Mat_TEMPBIN.copyTo(Mat_tmp);
+        Mat_TEMPBIN.copyTo(imgOut);
 
-        Rect roiRect = makeBoundingBox(tmpMat);
+        Rect roiRect = makeBoundingBox(Mat_tmp);
 
         if (roiRect!=null) {
             roiRect.x = Math.max(0, roiRect.x - boxExtension);
@@ -994,7 +863,7 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
             roiRect.width = Math.min(roiRect.width+boxExtension, colNum);
             roiRect.height = Math.min(roiRect.height+boxExtension, rowNum);
 
-            Mat roi1 = new Mat(binTmpMat, roiRect);
+            Mat roi1 = new Mat(Mat_TEMPBIN, roiRect);
             Mat roi3 = new Mat(imgOut, roiRect);
             imgOut.setTo(Scalar.all(0));
 
@@ -1009,7 +878,7 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
     void drawContour()
     {
         gr.contours.clear();
-        Imgproc.findContours(binMat, gr.contours, gr.hie, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_NONE);
+        Imgproc.findContours(Mat_BIN, gr.contours, gr.hie, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_NONE);
 
         //Find biggest contour and return the index of the contour, which is gr.cMaxId
         gr.findBiggestContour();
@@ -1020,10 +889,10 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
             gr.contours.get(gr.cMaxId).fromList(gr.approxContour.toList());
 
             //gr.contours.get(gr.cMaxId) represents the contour of the hand
-            Imgproc.drawContours(rgbaMat, gr.contours, gr.cMaxId, mColorsRGB[0], 1);
+            Imgproc.drawContours(Mat_RGBA, gr.contours, gr.cMaxId, mColorsRGB[0], 1);
 
             //Palm center is stored in gr.inCircle, radius of the inscribed circle is stored in gr.inCircleRadius
-            gr.findInscribedCircle(rgbaMat);
+            gr.findInscribedCircle(Mat_RGBA);
             gr.boundingRect = Imgproc.boundingRect(gr.contours.get(gr.cMaxId));
             Imgproc.convexHull(gr.contours.get(gr.cMaxId), gr.hullI, false);
             gr.hullP.clear();
@@ -1049,7 +918,7 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
             gr.defectIdAfter.clear();
 
             if ((contourPts.length >= 5)
-                    && gr.detectIsHand(rgbaMat) && (cId.length >=5)){
+                    && gr.detectIsHand(Mat_RGBA) && (cId.length >=5)){
                 Imgproc.convexityDefects(gr.contours.get(gr.cMaxId), gr.hullI, gr.defects);
                 List<Integer> dList = gr.defects.toList();
 
@@ -1072,8 +941,8 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
                         double cosTheta = dot/(lenth0*lenth1);
 
                         if ((depth > gr.inCircleRadius*0.7)&&(cosTheta>=-0.7)
-                                && (!isClosedToBoundary(curPoint0, rgbaMat))
-                                &&(!isClosedToBoundary(curPoint1, rgbaMat))
+                                && (!isClosedToBoundary(curPoint0, Mat_RGBA))
+                                &&(!isClosedToBoundary(curPoint1, Mat_RGBA))
                                 ){
 
                             gr.defectIdAfter.add((i));
@@ -1098,10 +967,10 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
             }
         }
 
-        if (gr.detectIsHand(rgbaMat)) {
+        if (gr.detectIsHand(Mat_RGBA)) {
             //gr.boundingRect represents four coordinates of the bounding box.
-            Core.rectangle(rgbaMat, gr.boundingRect.tl(), gr.boundingRect.br(), mColorsRGB[1], 2);
-            Imgproc.drawContours(rgbaMat, gr.hullP, gr.cMaxId, mColorsRGB[2]);
+            Core.rectangle(Mat_RGBA, gr.boundingRect.tl(), gr.boundingRect.br(), mColorsRGB[1], 2);
+            Imgproc.drawContours(Mat_RGBA, gr.hullP, gr.cMaxId, mColorsRGB[2]);
         }
     }
 
@@ -1124,7 +993,7 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
             gr.boundingRect = Imgproc.boundingRect(gr.contours.get(gr.cMaxId));
         }
 
-        if (gr.detectIsHand(rgbaMat)) {
+        if (gr.detectIsHand(Mat_RGBA)) {
 
             return gr.boundingRect;
         } else
@@ -1150,7 +1019,6 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
     @Override
     public void onDestroy(){
         Log.i(TAG, "Destroyed!");
-        releaseOpenCV();
         super.onDestroy();
         if (mOpenCvCameraView != null) {
             mOpenCvCameraView.disableView();
@@ -1266,10 +1134,10 @@ public class PerformActivity extends AppCompatActivity implements CvCameraViewLi
         if (((bm == ButtonMode.CALIBRATEBACK_INVISIBLE) || (bm == ButtonMode.CALIBRATEHAND_INVISIBLE)
                 || (bm == ButtonMode.PERFORM_ADD_TRAIN)) || (bm == ButtonMode.ADD_GESTRUE) ||
                 (bm == ButtonMode.PERFORM_RECORD)) {
-        Imgproc.cvtColor(rgbaMat, bgrMat, Imgproc.COLOR_RGBA2BGR, 3);
-        img = bgrMat;
+        Imgproc.cvtColor(Mat_RGBA, Mat_BGR, Imgproc.COLOR_RGBA2BGR, 3);
+        img = Mat_BGR;
         } else if (bm == ButtonMode.GENERATEBIN_INVISIBLE) {
-        img = binMat;
+        img = Mat_BIN;
 		} else
 			img = null;
 

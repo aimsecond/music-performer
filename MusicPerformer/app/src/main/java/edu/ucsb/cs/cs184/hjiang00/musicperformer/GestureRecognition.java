@@ -225,7 +225,6 @@ public class GestureRecognition {
 
 
                 Point disFinger = new Point(curFinPoint.x-inCircle.x, curFinPoint.y-inCircle.y);
-                double dis = Math.sqrt(disFinger.x*disFinger.x+disFinger.y*disFinger.y);
                 Double f1 = (disFinger.x)/inCircleRadius;
                 Double f2 = (disFinger.y)/inCircleRadius;
                 features.add(f1);

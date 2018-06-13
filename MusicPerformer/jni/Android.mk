@@ -5,7 +5,7 @@ include $(CLEAR_VARS)
 include $(LOCAL_PATH)/../OpenCV-android-sdk/sdk/native/jni/OpenCV.mk
 
 LOCAL_MODULE    := MusicPerformer
-LOCAL_SRC_FILES := jni_process.cpp
+LOCAL_SRC_FILES := get_radius.cpp
 LOCAL_LDLIBS +=  -llog -ldl
 
 include $(BUILD_SHARED_LIBRARY)
